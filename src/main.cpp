@@ -1,4 +1,5 @@
 #include <atomic>
+#include <float.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -11,6 +12,8 @@
 
 #define FLOAT_HEIGHT 512.0f
 #define FLOAT_WIDTH  512.0f
+
+#define N_SPHERES 1u
 
 #define RGB_COLOR_SCALE 255.999f
 
@@ -38,6 +41,17 @@ struct Ray {
     Vec3 direction;
 };
 
+struct HitRecord {
+    Vec3 point;
+    Vec3 normal;
+    f32  t;
+};
+
+struct Sphere {
+    Vec3 center;
+    f32  radius;
+};
+
 struct Point {
     u32 x;
     u32 y;
@@ -58,10 +72,6 @@ struct Memory {
     Thread   threads[N_THREADS];
     Block    blocks[N_BLOCKS];
 };
-
-static Vec3 at(Ray* ray, f32 t) {
-    return ray->origin + (ray->direction * t);
-}
 
 static u16Atomic INDEX;
 
@@ -89,23 +99,39 @@ static const Vec3 CAMERA_DEPTH = {
     1.0f,
 };
 
+static const Sphere SPHERES[N_SPHERES] = {
+    {{0.0f, 0.0f, -1.0f}, 0.5f},
+};
+
 static const Vec3 LOWER_LEFT_CORNER =
     ORIGIN - (CAMERA_WIDTH / 2.0f) - (CAMERA_HEIGHT / 2.0f) - CAMERA_DEPTH;
 
-static f32 hit_sphere(Vec3 center, f32 radius, Ray* ray) {
-    Vec3 oc = ray->origin - center;
+static Vec3 at(const Ray* ray, f32 t) {
+    return ray->origin + (ray->direction * t);
+}
+
+/* NOTE: Stopped at `6.3 An Abstraction for Hittable Objects`. */
+static f32 hit(const Sphere* sphere,
+               const Ray*    ray,
+               HitRecord*    hit_record,
+               f32           t_min,
+               f32           t_max) {
+    Vec3 origin_center = ray->origin - sphere->center;
     f32  a = dot(ray->direction, ray->direction);
-    f32  b = 2.0f * dot(oc, ray->direction);
-    f32  c = dot(oc, oc) - (radius * radius);
-    f32  discriminant = (b * b) - (4.0f * a * c);
+    f32  b = 2.0f * dot(origin_center, ray->direction);
+    f32  c =
+        dot(origin_center, origin_center) - (sphere->radius * sphere->radius);
+    f32 discriminant = (b * b) - (4.0f * a * c);
     if (discriminant < 0.0f) {
         return -1.0f;
     }
-    return (-b - sqrt(discriminant)) / (2.0f * a);
+    return (-b - sqrtf(discriminant)) / (2.0f * a);
 }
 
-static RgbColor get_color(Ray* ray) {
-    f32 t = hit_sphere({0.0f, 0.0f, -1.0f}, 0.5f, ray);
+static RgbColor get_color(const Ray* ray) {
+    HitRecord hit_record = {};
+    /* NOTE: Need to iterate through all the `SPHERES`! */
+    f32 t = hit(&SPHERES[0], ray, &hit_record, 0, F32_MAX);
     if (0.0f < t) {
         Vec3 v = {
             0.0f,

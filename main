@@ -35,6 +35,7 @@ export FLAGS=(
     "-Wmissing-declarations"
     "-Wmissing-include-dirs"
     "-Wno-unused-function"
+    "-Wno-unused-parameter"
     "-Wnull-dereference"
     "-Wpacked"
     "-Wpedantic"
