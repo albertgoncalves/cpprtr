@@ -1,0 +1,23 @@
+Language: Cpp
+IndentWidth: 4
+ColumnLimit: 79
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Left
+AlignOperands: true
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortFunctionsOnASingleLine: None
+IndentCaseLabels: false
+IndentPPDirectives: BeforeHash
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterControlStatement: MultiLine
+PointerAlignment: Left
+SpacesInContainerLiterals: false
+PenaltyReturnTypeOnItsOwnLine: 64

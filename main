@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+now () {
+    date +%s.%N
+}
+
+export TARGET_SANITIZE="$WD/bin/main_sanitize"
+export TARGET_VALGRIND="$WD/bin/main_valgrind"
+export FLAGS=(
+    "-fdelete-null-pointer-checks"
+    "-fshort-enums"
+    "-fsingle-precision-constant"
+    "-march=native"
+    "-O3"
+    "-std=gnu++11"
+    "-Wall"
+    "-Wcast-align"
+    "-Wcast-align=strict"
+    "-Wcast-qual"
+    "-Wconversion"
+    "-Wdate-time"
+    "-Wdouble-promotion"
+    "-Wduplicated-branches"
+    "-Wduplicated-cond"
+    "-Werror"
+    "-Wextra"
+    "-Wfatal-errors"
+    "-Wfloat-equal"
+    "-Wformat=2"
+    "-Wformat-signedness"
+    "-Winline"
+    "-Wlogical-op"
+    "-Wmissing-declarations"
+    "-Wmissing-include-dirs"
+    "-Wno-unused-function"
+    "-Wnull-dereference"
+    "-Wpacked"
+    "-Wpedantic"
+    "-Wpointer-arith"
+    "-Wredundant-decls"
+    "-Wshadow"
+    "-Wstack-protector"
+    "-Wswitch-enum"
+    "-Wtrampolines"
+    "-Wundef"
+    "-Wunused"
+    "-Wunused-macros"
+    "-Wwrite-strings"
+)
+export FLAGS_SANITIZE=(
+    "-fsanitize=address"
+    "-fsanitize-address-use-after-scope"
+    "-fsanitize=alignment"
+    "-fsanitize=bool"
+    "-fsanitize=bounds"
+    "-fsanitize=bounds-strict"
+    "-fsanitize=builtin"
+    "-fsanitize=enum"
+    "-fsanitize=float-cast-overflow"
+    "-fsanitize=float-divide-by-zero"
+    "-fsanitize=integer-divide-by-zero"
+    "-fsanitize=leak"
+    "-fsanitize=nonnull-attribute"
+    "-fsanitize=null"
+    "-fsanitize=object-size"
+    "-fsanitize=pointer-overflow"
+    "-fsanitize=returns-nonnull-attribute"
+    "-fsanitize=shift"
+    "-fsanitize=shift-base"
+    "-fsanitize=shift-exponent"
+    "-fsanitize=signed-integer-overflow"
+    "-fsanitize=undefined"
+    "-fsanitize-undefined-trap-on-error"
+    "-fsanitize=unreachable"
+    "-fsanitize=vla-bound"
+)
+export FILES=(
+    main.cpp
+)
+
+build_all () {
+    cp "$WD/src"/* "$WD/build"
+    cd "$WD/build" || exit 1
+    g++ -g -o "$TARGET_VALGRIND" "${FLAGS[@]}" -lm -pthread "${FILES[@]}"
+    g++ \
+        -o "$TARGET_SANITIZE" \
+        "${FLAGS[@]}" \
+        "${FLAGS_SANITIZE[@]}" \
+        -lm \
+        -pthread \
+        "${FILES[@]}"
+}
+
+(
+    start=$(now)
+    clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
+    cppcheck \
+        --enable=all \
+        --suppress=cstyleCast \
+        --suppress=missingIncludeSystem \
+        --suppress=resourceLeak \
+        "$WD/src"
+    build_all
+    end=$(now)
+    python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
+)
+
+"$TARGET_SANITIZE"
