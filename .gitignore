@@ -6,7 +6,7 @@
 !cover.bmp
 !.clang-format
 !src/
-!*.c
+!*.cpp
 !*.h
 !main
 !profile
