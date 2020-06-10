@@ -11,7 +11,7 @@ typedef int            i32;
 #define U16_MAX (u16)0xFFFF
 #define U32_MAX (u32)0xFFFFFFFF
 
-typedef std::atomic<u16> u16Atomic;
+typedef std::atomic_ushort u16Atomic;
 
 typedef float f32;
 

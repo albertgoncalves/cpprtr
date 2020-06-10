@@ -29,12 +29,12 @@ struct Pixel {
 };
 
 #define BMP_HEADER_SIZE sizeof(BmpHeader) + sizeof(DibHeader)
-#define BMP_FILE_SIZE   BMP_HEADER_SIZE + sizeof(Pixel[BUFFER_SIZE])
+#define BMP_FILE_SIZE   BMP_HEADER_SIZE + sizeof(Pixel[N_PIXELS])
 
 #pragma pack(pop)
 
 struct BmpImage {
-    Pixel     pixels[BUFFER_SIZE];
+    Pixel     pixels[N_PIXELS];
     DibHeader dib_header;
     BmpHeader bmp_header;
 };
@@ -47,8 +47,8 @@ static void set_bmp_header(BmpHeader* header) {
 
 static void set_dib_header(DibHeader* header) {
     header->header_size = sizeof(DibHeader);
-    header->pixel_width = (i32)BUFFER_WIDTH;
-    header->pixel_height = (i32)BUFFER_HEIGHT;
+    header->pixel_width = (i32)IMAGE_WIDTH;
+    header->pixel_height = (i32)IMAGE_HEIGHT;
     header->color_planes = 1;
     header->bits_per_pixel = sizeof(Pixel) * 8;
 }
@@ -64,8 +64,8 @@ static void write_bmp(FileHandle* file, BmpImage* image) {
     {
         exit(EXIT_FAILURE);
     }
-    if (fwrite(&image->pixels, 1, sizeof(Pixel[BUFFER_SIZE]), file) !=
-        sizeof(Pixel[BUFFER_SIZE]))
+    if (fwrite(&image->pixels, 1, sizeof(Pixel[N_PIXELS]), file) !=
+        sizeof(Pixel[N_PIXELS]))
     {
         exit(EXIT_FAILURE);
     }
