@@ -1,7 +1,6 @@
 #ifndef __BMP_H__
 #define __BMP_H__
 
-#include "color.h"
 #include "types.h"
 
 #pragma pack(push, 1)

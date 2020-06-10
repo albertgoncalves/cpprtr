@@ -25,20 +25,27 @@
 #define FILEPATH "out/main.bmp"
 
 #include "bmp.h"
+#include "math.h"
+
+struct RgbColor {
+    f32 red;
+    f32 green;
+    f32 blue;
+};
 
 struct Ray {
     Vec3 origin;
     Vec3 direction;
 };
 
-struct XY {
+struct Point {
     u32 x;
     u32 y;
 };
 
 struct Block {
-    XY start;
-    XY end;
+    Point start;
+    Point end;
 };
 
 struct Payload {
@@ -64,27 +71,26 @@ static const Vec3 ORIGIN = {
     0.0f,
 };
 
-static const Vec3 VIEWPORT_WIDTH = {
+static const Vec3 CAMERA_WIDTH = {
     2.0f,
     0.0f,
     0.0f,
 };
 
-static const Vec3 VIEWPORT_HEIGHT = {
+static const Vec3 CAMERA_HEIGHT = {
     0.0f,
     2.0f,
     0.0f,
 };
 
-static const Vec3 VIEWPORT_DEPTH = {
+static const Vec3 CAMERA_DEPTH = {
     0.0f,
     0.0f,
     1.0f,
 };
 
-static const Vec3 LOWER_LEFT_CORNER = ORIGIN - (VIEWPORT_WIDTH / 2.0f) -
-                                      (VIEWPORT_HEIGHT / 2.0f) -
-                                      VIEWPORT_DEPTH;
+static const Vec3 LOWER_LEFT_CORNER =
+    ORIGIN - (CAMERA_WIDTH / 2.0f) - (CAMERA_HEIGHT / 2.0f) - CAMERA_DEPTH;
 
 static f32 hit_sphere(Vec3 center, f32 radius, Ray* ray) {
     Vec3 oc = ray->origin - center;
@@ -126,13 +132,12 @@ static void render_block(Pixel* pixels, Block block) {
     for (u32 j = block.start.y; j < block.end.y; ++j) {
         u32  offset = j * IMAGE_WIDTH;
         f32  y = (f32)j / FLOAT_HEIGHT;
-        Vec3 y_vertical = y * VIEWPORT_HEIGHT;
+        Vec3 y_vertical = y * CAMERA_HEIGHT;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
             f32 x = (f32)i / FLOAT_WIDTH;
             Ray ray = {
                 ORIGIN,
-                (LOWER_LEFT_CORNER + (x * VIEWPORT_WIDTH) + y_vertical) -
-                    ORIGIN,
+                (LOWER_LEFT_CORNER + (x * CAMERA_WIDTH) + y_vertical) - ORIGIN,
             };
             RgbColor color = get_color(&ray);
             Pixel*   pixel = &pixels[i + offset];
@@ -162,11 +167,11 @@ static void set_pixels(Memory* memory) {
     u16 index = 0;
     for (u32 y = 0; y < Y_BLOCKS; ++y) {
         for (u32 x = 0; x < X_BLOCKS; ++x) {
-            XY start = {
+            Point start = {
                 x * BLOCK_WIDTH,
                 y * BLOCK_HEIGHT,
             };
-            XY end = {
+            Point end = {
                 start.x + BLOCK_WIDTH,
                 start.y + BLOCK_HEIGHT,
             };
@@ -190,14 +195,14 @@ static void set_pixels(Memory* memory) {
 int main() {
     printf("sizeof(Vec3)    : %zu\n"
            "sizeof(Ray)     : %zu\n"
-           "sizeof(XY)      : %zu\n"
+           "sizeof(Point)   : %zu\n"
            "sizeof(Block)   : %zu\n"
            "sizeof(Payload) : %zu\n"
            "sizeof(Memory)  : %zu\n"
            "\n",
            sizeof(Vec3),
            sizeof(Ray),
-           sizeof(XY),
+           sizeof(Point),
            sizeof(Block),
            sizeof(Payload),
            sizeof(Memory));
