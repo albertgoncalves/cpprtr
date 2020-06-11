@@ -15,7 +15,7 @@
 
 #define N_SPHERES 1u
 
-#define RGB_COLOR_SCALE 255.999f
+#define RGB_COLOR_SCALE 255.0f
 
 #define BLOCK_WIDTH  128u
 #define BLOCK_HEIGHT 128u
@@ -81,19 +81,19 @@ static const Vec3 ORIGIN = {
     0.0f,
 };
 
-static const Vec3 CAMERA_WIDTH = {
+static const Vec3 VIEWPORT_WIDTH = {
     2.0f,
     0.0f,
     0.0f,
 };
 
-static const Vec3 CAMERA_HEIGHT = {
+static const Vec3 VIEWPORT_HEIGHT = {
     0.0f,
     2.0f,
     0.0f,
 };
 
-static const Vec3 CAMERA_DEPTH = {
+static const Vec3 FOCAL_LENGTH = {
     0.0f,
     0.0f,
     1.0f,
@@ -103,8 +103,8 @@ static const Sphere SPHERES[N_SPHERES] = {
     {{0.0f, 0.0f, -1.0f}, 0.5f},
 };
 
-static const Vec3 LOWER_LEFT_CORNER =
-    ORIGIN - (CAMERA_WIDTH / 2.0f) - (CAMERA_HEIGHT / 2.0f) - CAMERA_DEPTH;
+static const Vec3 VIEWPORT_BOTTOM_LEFT =
+    ORIGIN - (VIEWPORT_WIDTH / 2.0f) - (VIEWPORT_HEIGHT / 2.0f) - FOCAL_LENGTH;
 
 static Vec3 at(const Ray* ray, f32 t) {
     return ray->origin + (ray->direction * t);
@@ -158,12 +158,13 @@ static void render_block(Pixel* pixels, Block block) {
     for (u32 j = block.start.y; j < block.end.y; ++j) {
         u32  offset = j * IMAGE_WIDTH;
         f32  y = (f32)j / FLOAT_HEIGHT;
-        Vec3 y_vertical = y * CAMERA_HEIGHT;
+        Vec3 y_vertical = y * VIEWPORT_HEIGHT;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
             f32 x = (f32)i / FLOAT_WIDTH;
             Ray ray = {
                 ORIGIN,
-                (LOWER_LEFT_CORNER + (x * CAMERA_WIDTH) + y_vertical) - ORIGIN,
+                (VIEWPORT_BOTTOM_LEFT + (x * VIEWPORT_WIDTH) + y_vertical) -
+                    ORIGIN,
             };
             RgbColor color = get_color(&ray);
             Pixel*   pixel = &pixels[i + offset];
