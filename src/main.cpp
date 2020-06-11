@@ -6,12 +6,12 @@
 
 #include "types.h"
 
-#define IMAGE_WIDTH  512u
-#define IMAGE_HEIGHT 512u
-#define N_PIXELS     262144u
+#define IMAGE_WIDTH  1024u
+#define IMAGE_HEIGHT 1024u
+#define N_PIXELS     1048576u
 
-#define FLOAT_HEIGHT 512.0f
-#define FLOAT_WIDTH  512.0f
+#define FLOAT_HEIGHT 1024.0f
+#define FLOAT_WIDTH  1024.0f
 
 #define N_SPHERES 1u
 
@@ -19,9 +19,9 @@
 
 #define BLOCK_WIDTH  128u
 #define BLOCK_HEIGHT 128u
-#define X_BLOCKS     4u
-#define Y_BLOCKS     4u
-#define N_BLOCKS     16u
+#define X_BLOCKS     8u
+#define Y_BLOCKS     8u
+#define N_BLOCKS     64u
 
 #define N_THREADS 3u
 
@@ -45,6 +45,7 @@ struct HitRecord {
     Vec3 point;
     Vec3 normal;
     f32  t;
+    bool front_face;
 };
 
 struct Sphere {
@@ -110,42 +111,66 @@ static Vec3 at(const Ray* ray, f32 t) {
     return ray->origin + (ray->direction * t);
 }
 
-/* NOTE: Stopped at `6.3 An Abstraction for Hittable Objects`. */
-static f32 hit(const Sphere* sphere,
-               const Ray*    ray,
-               HitRecord*    hit_record,
-               f32           t_min,
-               f32           t_max) {
+static bool hit(const Sphere* sphere,
+                const Ray*    ray,
+                HitRecord*    record,
+                f32           t_min,
+                f32           t_max) {
     Vec3 origin_center = ray->origin - sphere->center;
     f32  a = dot(ray->direction, ray->direction);
-    f32  b = 2.0f * dot(origin_center, ray->direction);
+    f32  half_b = dot(origin_center, ray->direction);
     f32  c =
         dot(origin_center, origin_center) - (sphere->radius * sphere->radius);
-    f32 discriminant = (b * b) - (4.0f * a * c);
-    if (discriminant < 0.0f) {
-        return -1.0f;
+    f32 discriminant = (half_b * half_b) - (a * c);
+    if (0.0f < discriminant) {
+        f32 root = sqrtf(discriminant);
+        f32 t = (-half_b - root) / a;
+        if ((t_min < t) && (t < t_max)) {
+            record->t = t;
+            Vec3 point = at(ray, t);
+            record->point = point;
+            Vec3 outward_normal = (point - sphere->center) / sphere->radius;
+            bool front_face = dot(ray->direction, outward_normal) < 0;
+            record->front_face = front_face;
+            record->normal = front_face ? outward_normal : -outward_normal;
+            return true;
+        }
+        t = (-half_b + root) / a;
+        if ((t_min < t) && (t < t_max)) {
+            record->t = t;
+            Vec3 point = at(ray, t);
+            record->point = point;
+            Vec3 outward_normal = (point - sphere->center) / sphere->radius;
+            bool front_face = dot(ray->direction, outward_normal) < 0;
+            record->front_face = front_face;
+            record->normal = front_face ? outward_normal : -outward_normal;
+            return true;
+        }
     }
-    return (-b - sqrtf(discriminant)) / (2.0f * a);
+    return false;
 }
 
+/* NOTE: Stopped at `6.7 Common Constants and Utility Functions`. */
 static RgbColor get_color(const Ray* ray) {
-    HitRecord hit_record = {};
-    /* NOTE: Need to iterate through all the `SPHERES`! */
-    f32 t = hit(&SPHERES[0], ray, &hit_record, 0, F32_MAX);
-    if (0.0f < t) {
-        Vec3 v = {
-            0.0f,
-            0.0f,
-            -1.0f,
-        };
-        Vec3 normal = unit(at(ray, t) - v);
+    HitRecord last_record = {};
+    HitRecord nearest_record = {};
+    bool      hit_anything = false;
+    f32       t_nearest = F32_MAX;
+    for (u8 i = 0; i < N_SPHERES; ++i) {
+        if (hit(&SPHERES[i], ray, &last_record, 0, t_nearest)) {
+            hit_anything = true;
+            t_nearest = last_record.t;
+            nearest_record = last_record;
+        }
+    }
+    if (hit_anything) {
         return {
-            0.5f * (normal.x + 1.0f),
-            0.5f * (normal.y + 1.0f),
-            0.5f * (normal.z + 1.0f),
+            0.5f * (nearest_record.normal.x + 1.0f),
+            0.5f * (nearest_record.normal.y + 1.0f),
+            0.5f * (nearest_record.normal.z + 1.0f),
         };
     }
-    t = 0.5f * (unit(ray->direction).y + 1.0f);
+    f32 t = 0.5f * (unit(ray->direction).y + 1.0f);
     f32 u = 1.0f - t;
     return {
         u + (t * 0.5f),
