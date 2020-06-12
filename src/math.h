@@ -23,21 +23,6 @@ static Vec3 operator+(Vec3 a, Vec3 b) {
     };
 }
 
-static Vec3 operator+(Vec3 a, f32 b) {
-    return {
-        a.x + b,
-        a.y + b,
-        a.z + b,
-    };
-}
-
-static Vec3& operator+=(Vec3& a, Vec3 b) {
-    a.x += b.x;
-    a.y += b.y;
-    a.z += b.z;
-    return a;
-}
-
 static Vec3 operator-(Vec3 a) {
     return {
         -a.x,
@@ -52,13 +37,6 @@ static Vec3 operator-(Vec3 a, Vec3 b) {
         a.y - b.y,
         a.z - b.z,
     };
-}
-
-static Vec3& operator-=(Vec3& a, Vec3 b) {
-    a.x -= b.x;
-    a.y -= b.y;
-    a.z -= b.z;
-    return a;
 }
 
 static Vec3 operator*(Vec3 a, f32 b) {
