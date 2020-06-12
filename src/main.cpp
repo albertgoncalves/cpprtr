@@ -7,12 +7,12 @@
 
 #include "types.h"
 
-#define IMAGE_WIDTH  256u
-#define IMAGE_HEIGHT 256u
-#define N_PIXELS     65536u
+#define IMAGE_WIDTH  512u
+#define IMAGE_HEIGHT 512u
+#define N_PIXELS     262144u
 
-#define FLOAT_HEIGHT 256.0f
-#define FLOAT_WIDTH  256.0f
+#define FLOAT_HEIGHT 512.0f
+#define FLOAT_WIDTH  512.0f
 
 #define N_SPHERES 2u
 
@@ -22,9 +22,9 @@
 
 #define BLOCK_WIDTH  64u
 #define BLOCK_HEIGHT 64u
-#define X_BLOCKS     4u
-#define Y_BLOCKS     4u
-#define N_BLOCKS     16u
+#define X_BLOCKS     8u
+#define Y_BLOCKS     8u
+#define N_BLOCKS     64u
 
 #define N_THREADS 4u
 
