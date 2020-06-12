@@ -16,7 +16,9 @@
 
 #define N_SPHERES 2u
 
+#define N_BOUNCES         16u
 #define SAMPLES_PER_PIXEL 64u
+#define EPSILON           0.001f
 
 #define BLOCK_WIDTH  64u
 #define BLOCK_HEIGHT 64u
@@ -148,26 +150,49 @@ static bool hit(const Sphere* sphere,
     return false;
 }
 
-static RgbColor get_color(const Ray* ray) {
+static Vec3 get_random_vec3(PcgRng* rng) {
+    return {
+        get_random_f32(rng),
+        get_random_f32(rng),
+        get_random_f32(rng),
+    };
+}
+
+static Vec3 get_random_point(PcgRng* rng) {
+    for (;;) {
+        Vec3 point = get_random_vec3(rng);
+        point *= 2.0f;
+        point -= 1.0f;
+        if (dot(point, point) < 1.0f) {
+            return point;
+        }
+    }
+}
+
+RgbColor get_color(const Ray*, PcgRng*, u16);
+RgbColor get_color(const Ray* ray, PcgRng* rng, u16 depth) {
+    if (depth < 1u) {
+        return {};
+    }
     HitRecord last_record = {};
     HitRecord nearest_record = {};
     bool      hit_anything = false;
     f32       t_nearest = F32_MAX;
     for (u8 i = 0; i < N_SPHERES; ++i) {
-        if (hit(&SPHERES[i], ray, &last_record, 0, t_nearest)) {
+        if (hit(&SPHERES[i], ray, &last_record, EPSILON, t_nearest)) {
             hit_anything = true;
             t_nearest = last_record.t;
             nearest_record = last_record;
         }
     }
     if (hit_anything) {
-        RgbColor color = {};
-        color.red = nearest_record.normal.x;
-        color.green = nearest_record.normal.y;
-        color.blue = nearest_record.normal.z;
-        color += 1.0f;
-        color *= 0.5f;
-        return color;
+        Vec3 target = nearest_record.point + nearest_record.normal +
+                      get_random_point(rng);
+        Ray bounce_ray = {
+            nearest_record.point,
+            target - nearest_record.point,
+        };
+        return 0.5f * get_color(&bounce_ray, rng, (u16)(depth - 1));
     }
     f32      t = 0.5f * (unit(ray->direction).y + 1.0f);
     RgbColor color = {
@@ -177,6 +202,14 @@ static RgbColor get_color(const Ray* ray) {
     };
     color += 1.0f - t;
     return color;
+}
+
+static void set_color(Pixel* pixel, RgbColor* color) {
+    *color /= (f32)SAMPLES_PER_PIXEL;
+    clamp(color, 0.0f, 1.0f);
+    pixel->red = (u8)(RGB_COLOR_SCALE * sqrtf(color->red));
+    pixel->green = (u8)(RGB_COLOR_SCALE * sqrtf(color->green));
+    pixel->blue = (u8)(RGB_COLOR_SCALE * sqrtf(color->blue));
 }
 
 static void render_block(Pixel* pixels, Block block, PcgRng* rng) {
@@ -193,14 +226,9 @@ static void render_block(Pixel* pixels, Block block, PcgRng* rng) {
                      (y * VIEWPORT_HEIGHT)) -
                         ORIGIN,
                 };
-                color += get_color(&ray);
+                color += get_color(&ray, rng, N_BOUNCES);
             }
-            color /= (f32)SAMPLES_PER_PIXEL;
-            clamp(&color, 0.0f, 1.0f);
-            Pixel* pixel = &pixels[i + offset];
-            pixel->red = (u8)(RGB_COLOR_SCALE * color.red);
-            pixel->green = (u8)(RGB_COLOR_SCALE * color.green);
-            pixel->blue = (u8)(RGB_COLOR_SCALE * color.blue);
+            set_color(&pixels[i + offset], &color);
         }
     }
 }

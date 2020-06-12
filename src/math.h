@@ -39,12 +39,26 @@ static Vec3 operator-(Vec3 a, Vec3 b) {
     };
 }
 
+static Vec3& operator-=(Vec3& a, f32 b) {
+    a.x -= b;
+    a.y -= b;
+    a.z -= b;
+    return a;
+}
+
 static Vec3 operator*(Vec3 a, f32 b) {
     return {
         a.x * b,
         a.y * b,
         a.z * b,
     };
+}
+
+static Vec3& operator*=(Vec3& a, f32 b) {
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+    return a;
 }
 
 static Vec3 operator*(f32 a, Vec3 b) {
