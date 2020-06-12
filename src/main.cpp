@@ -16,7 +16,6 @@
 
 #define N_SPHERES 2u
 
-#define RGB_COLOR_SCALE   255.0f
 #define SAMPLES_PER_PIXEL 64u
 
 #define BLOCK_WIDTH  64u
@@ -30,42 +29,9 @@
 #define FILEPATH "out/main.bmp"
 
 #include "bmp.h"
+#include "color.h"
 #include "math.h"
 #include "random.h"
-
-struct RgbColor {
-    f32 red;
-    f32 green;
-    f32 blue;
-};
-
-static RgbColor& operator+=(RgbColor& a, RgbColor b) {
-    a.red += b.red;
-    a.green += b.green;
-    a.blue += b.blue;
-    return a;
-}
-
-static RgbColor& operator+=(RgbColor& a, f32 b) {
-    a.red += b;
-    a.green += b;
-    a.blue += b;
-    return a;
-}
-
-static RgbColor& operator*=(RgbColor& a, f32 b) {
-    a.red *= b;
-    a.green *= b;
-    a.blue *= b;
-    return a;
-}
-
-static RgbColor& operator/=(RgbColor& a, f32 b) {
-    a.red /= b;
-    a.green /= b;
-    a.blue /= b;
-    return a;
-}
 
 struct Ray {
     Vec3 origin;
@@ -211,22 +177,6 @@ static RgbColor get_color(const Ray* ray) {
     };
     color += 1.0f - t;
     return color;
-}
-
-static f32 clamp(f32 x, f32 min, f32 max) {
-    if (x < min) {
-        return min;
-    } else if (max < x) {
-        return max;
-    } else {
-        return x;
-    }
-}
-
-static void clamp(RgbColor* color, f32 min, f32 max) {
-    color->red = clamp(color->red, min, max);
-    color->green = clamp(color->green, min, max);
-    color->blue = clamp(color->blue, min, max);
 }
 
 static void render_block(Pixel* pixels, Block block, PcgRng* rng) {
