@@ -3,6 +3,12 @@
 
 #include "types.h"
 
+#define PI 3.1415926535897932385f
+
+static f32 degrees_to_radians(f32 degrees) {
+    return (degrees * PI) / 180.0f;
+}
+
 struct Vec3 {
     f32 x;
     f32 y;

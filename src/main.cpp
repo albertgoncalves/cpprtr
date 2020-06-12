@@ -3,25 +3,27 @@
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "types.h"
 
-#define IMAGE_WIDTH  1024u
-#define IMAGE_HEIGHT 1024u
-#define N_PIXELS     1048576u
+#define IMAGE_WIDTH  256u
+#define IMAGE_HEIGHT 256u
+#define N_PIXELS     65536u
 
-#define FLOAT_HEIGHT 1024.0f
-#define FLOAT_WIDTH  1024.0f
+#define FLOAT_HEIGHT 256.0f
+#define FLOAT_WIDTH  256.0f
 
-#define N_SPHERES 1u
+#define N_SPHERES 2u
 
-#define RGB_COLOR_SCALE 255.0f
+#define RGB_COLOR_SCALE   255.0f
+#define SAMPLES_PER_PIXEL 64u
 
-#define BLOCK_WIDTH  128u
-#define BLOCK_HEIGHT 128u
-#define X_BLOCKS     8u
-#define Y_BLOCKS     8u
-#define N_BLOCKS     64u
+#define BLOCK_WIDTH  64u
+#define BLOCK_HEIGHT 64u
+#define X_BLOCKS     4u
+#define Y_BLOCKS     4u
+#define N_BLOCKS     16u
 
 #define N_THREADS 3u
 
@@ -29,12 +31,41 @@
 
 #include "bmp.h"
 #include "math.h"
+#include "random.h"
 
 struct RgbColor {
     f32 red;
     f32 green;
     f32 blue;
 };
+
+static RgbColor& operator+=(RgbColor& a, RgbColor b) {
+    a.red += b.red;
+    a.green += b.green;
+    a.blue += b.blue;
+    return a;
+}
+
+static RgbColor& operator+=(RgbColor& a, f32 b) {
+    a.red += b;
+    a.green += b;
+    a.blue += b;
+    return a;
+}
+
+static RgbColor& operator*=(RgbColor& a, f32 b) {
+    a.red *= b;
+    a.green *= b;
+    a.blue *= b;
+    return a;
+}
+
+static RgbColor& operator/=(RgbColor& a, f32 b) {
+    a.red /= b;
+    a.green /= b;
+    a.blue /= b;
+    return a;
+}
 
 struct Ray {
     Vec3 origin;
@@ -102,6 +133,7 @@ static const Vec3 FOCAL_LENGTH = {
 
 static const Sphere SPHERES[N_SPHERES] = {
     {{0.0f, 0.0f, -1.0f}, 0.5f},
+    {{0.0f, -100.5f, -1.0f}, 100.0f},
 };
 
 static const Vec3 VIEWPORT_BOTTOM_LEFT =
@@ -150,7 +182,6 @@ static bool hit(const Sphere* sphere,
     return false;
 }
 
-/* NOTE: Stopped at `6.7 Common Constants and Utility Functions`. */
 static RgbColor get_color(const Ray* ray) {
     HitRecord last_record = {};
     HitRecord nearest_record = {};
@@ -164,35 +195,59 @@ static RgbColor get_color(const Ray* ray) {
         }
     }
     if (hit_anything) {
-        return {
-            0.5f * (nearest_record.normal.x + 1.0f),
-            0.5f * (nearest_record.normal.y + 1.0f),
-            0.5f * (nearest_record.normal.z + 1.0f),
-        };
+        RgbColor color = {};
+        color.red = nearest_record.normal.x;
+        color.green = nearest_record.normal.y;
+        color.blue = nearest_record.normal.z;
+        color += 1.0f;
+        color *= 0.5f;
+        return color;
     }
-    f32 t = 0.5f * (unit(ray->direction).y + 1.0f);
-    f32 u = 1.0f - t;
-    return {
-        u + (t * 0.5f),
-        u + (t * 0.7f),
-        u + t,
+    f32      t = 0.5f * (unit(ray->direction).y + 1.0f);
+    RgbColor color = {
+        t * 0.5f,
+        t * 0.7f,
+        t,
     };
+    color += 1.0f - t;
+    return color;
 }
 
-static void render_block(Pixel* pixels, Block block) {
+static f32 clamp(f32 x, f32 min, f32 max) {
+    if (x < min) {
+        return min;
+    } else if (max < x) {
+        return max;
+    } else {
+        return x;
+    }
+}
+
+static void clamp(RgbColor* color, f32 min, f32 max) {
+    color->red = clamp(color->red, min, max);
+    color->green = clamp(color->green, min, max);
+    color->blue = clamp(color->blue, min, max);
+}
+
+static void render_block(Pixel* pixels, Block block, PcgRng* rng) {
     for (u32 j = block.start.y; j < block.end.y; ++j) {
-        u32  offset = j * IMAGE_WIDTH;
-        f32  y = (f32)j / FLOAT_HEIGHT;
-        Vec3 y_vertical = y * VIEWPORT_HEIGHT;
+        u32 offset = j * IMAGE_WIDTH;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
-            f32 x = (f32)i / FLOAT_WIDTH;
-            Ray ray = {
-                ORIGIN,
-                (VIEWPORT_BOTTOM_LEFT + (x * VIEWPORT_WIDTH) + y_vertical) -
+            RgbColor color = {};
+            for (u8 _ = 0; _ < SAMPLES_PER_PIXEL; ++_) {
+                f32 x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
+                f32 y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
+                Ray ray = {
                     ORIGIN,
-            };
-            RgbColor color = get_color(&ray);
-            Pixel*   pixel = &pixels[i + offset];
+                    (VIEWPORT_BOTTOM_LEFT + (x * VIEWPORT_WIDTH) +
+                     (y * VIEWPORT_HEIGHT)) -
+                        ORIGIN,
+                };
+                color += get_color(&ray);
+            }
+            color /= (f32)SAMPLES_PER_PIXEL;
+            clamp(&color, 0.0f, 1.0f);
+            Pixel* pixel = &pixels[i + offset];
             pixel->red = (u8)(RGB_COLOR_SCALE * color.red);
             pixel->green = (u8)(RGB_COLOR_SCALE * color.green);
             pixel->blue = (u8)(RGB_COLOR_SCALE * color.blue);
@@ -203,12 +258,14 @@ static void render_block(Pixel* pixels, Block block) {
 static void* thread_render(void* args) {
     Payload* payload = (Payload*)args;
     Pixel*   buffer = payload->buffer;
+    PcgRng   rng = {};
+    init_random(&rng);
     for (;;) {
         u16 index = INDEX.fetch_add(1, std::memory_order_seq_cst);
         if (N_BLOCKS <= index) {
             return NULL;
         }
-        render_block(buffer, payload->blocks[index]);
+        render_block(buffer, payload->blocks[index], &rng);
     }
 }
 
