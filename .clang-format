@@ -20,4 +20,4 @@ BraceWrapping:
     AfterControlStatement: MultiLine
 PointerAlignment: Left
 SpacesInContainerLiterals: false
-PenaltyReturnTypeOnItsOwnLine: 64
+PenaltyReturnTypeOnItsOwnLine: 128

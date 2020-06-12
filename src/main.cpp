@@ -26,7 +26,7 @@
 #define Y_BLOCKS     4u
 #define N_BLOCKS     16u
 
-#define N_THREADS 3u
+#define N_THREADS 4u
 
 #define FILEPATH "out/main.bmp"
 
@@ -111,6 +111,19 @@ static Vec3 at(const Ray* ray, f32 t) {
     return ray->origin + (ray->direction * t);
 }
 
+static void set_record(HitRecord*    record,
+                       const Sphere* sphere,
+                       const Ray*    ray,
+                       f32           t) {
+    record->t = t;
+    Vec3 point = at(ray, t);
+    record->point = point;
+    Vec3 outward_normal = (point - sphere->center) / sphere->radius;
+    bool front_face = dot(ray->direction, outward_normal) < 0;
+    record->front_face = front_face;
+    record->normal = front_face ? outward_normal : -outward_normal;
+}
+
 static bool hit(const Sphere* sphere,
                 const Ray*    ray,
                 HitRecord*    record,
@@ -126,24 +139,12 @@ static bool hit(const Sphere* sphere,
         f32 root = sqrtf(discriminant);
         f32 t = (-half_b - root) / a;
         if ((t_min < t) && (t < t_max)) {
-            record->t = t;
-            Vec3 point = at(ray, t);
-            record->point = point;
-            Vec3 outward_normal = (point - sphere->center) / sphere->radius;
-            bool front_face = dot(ray->direction, outward_normal) < 0;
-            record->front_face = front_face;
-            record->normal = front_face ? outward_normal : -outward_normal;
+            set_record(record, sphere, ray, t);
             return true;
         }
         t = (-half_b + root) / a;
         if ((t_min < t) && (t < t_max)) {
-            record->t = t;
-            Vec3 point = at(ray, t);
-            record->point = point;
-            Vec3 outward_normal = (point - sphere->center) / sphere->radius;
-            bool front_face = dot(ray->direction, outward_normal) < 0;
-            record->front_face = front_face;
-            record->normal = front_face ? outward_normal : -outward_normal;
+            set_record(record, sphere, ray, t);
             return true;
         }
     }
@@ -169,6 +170,7 @@ static Vec3 get_random_point(PcgRng* rng) {
     }
 }
 
+/* NOTE: Stopped at `8.5 True Lambertian Reflection`. */
 RgbColor get_color(const Ray*, PcgRng*, u16);
 RgbColor get_color(const Ray* ray, PcgRng* rng, u16 depth) {
     if (depth < 1u) {
@@ -192,7 +194,7 @@ RgbColor get_color(const Ray* ray, PcgRng* rng, u16 depth) {
             nearest_record.point,
             target - nearest_record.point,
         };
-        return 0.5f * get_color(&bounce_ray, rng, (u16)(depth - 1));
+        return 0.5f * get_color(&bounce_ray, rng, (u16)(depth - 1u));
     }
     f32      t = 0.5f * (unit(ray->direction).y + 1.0f);
     RgbColor color = {
