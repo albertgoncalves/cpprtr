@@ -50,6 +50,7 @@ struct HitRecord {
     Vec3     normal;
     Material material;
     RgbColor albedo;
+    f32      fuzz;
     f32      t;
     bool     front_face;
 };
@@ -58,6 +59,7 @@ struct Sphere {
     Vec3     center;
     RgbColor albedo;
     f32      radius;
+    f32      fuzz;
     Material material;
 };
 
@@ -109,10 +111,10 @@ static const Vec3 FOCAL_LENGTH = {
 };
 
 static const Sphere SPHERES[N_SPHERES] = {
-    {{0.0f, 0.0f, -1.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, LAMBERTIAN},
-    {{0.0f, -100.5f, -1.0f}, {0.8f, 0.8f, 0.0f}, 100.0f, LAMBERTIAN},
-    {{1.0f, 0.0f, -1.0f}, {0.8f, 0.6f, 0.2f}, 0.5f, METAL},
-    {{-1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, METAL},
+    {{0.0f, 0.0f, -1.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
+    {{0.0f, -100.5f, -1.0f}, {0.8f, 0.8f, 0.0f}, 100.0f, 0.0f, LAMBERTIAN},
+    {{1.0f, 0.0f, -1.0f}, {0.8f, 0.6f, 0.2f}, 0.5f, 0.1f, METAL},
+    {{-1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.05f, METAL},
 };
 
 static const Vec3 VIEWPORT_BOTTOM_LEFT =
@@ -135,6 +137,7 @@ static void set_record(HitRecord*    record,
     record->normal = front_face ? outward_normal : -outward_normal;
     record->material = sphere->material;
     record->albedo = sphere->albedo;
+    record->fuzz = sphere->fuzz;
 }
 
 static bool hit(const Sphere* sphere,
@@ -237,7 +240,8 @@ RgbColor get_color(const Ray* ray, PcgRng* rng, u16 depth) {
                 reflect(unit(ray->direction), nearest_record.normal);
             Ray scattered = {
                 nearest_record.point,
-                reflected,
+                reflected +
+                    (nearest_record.fuzz * get_random_in_unit_sphere(rng)),
             };
             RgbColor attenuation = nearest_record.albedo;
             if (0.0f < dot(scattered.direction, nearest_record.normal)) {
