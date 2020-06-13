@@ -14,9 +14,9 @@
 #define FLOAT_HEIGHT 512.0f
 #define FLOAT_WIDTH  512.0f
 
-#define N_SPHERES 2u
+#define N_SPHERES 4u
 
-#define N_BOUNCES         16u
+#define N_BOUNCES         8u
 #define SAMPLES_PER_PIXEL 64u
 #define EPSILON           0.001f
 
@@ -40,16 +40,25 @@ struct Ray {
     Vec3 direction;
 };
 
+enum Material {
+    LAMBERTIAN,
+    METAL,
+};
+
 struct HitRecord {
-    Vec3 point;
-    Vec3 normal;
-    f32  t;
-    bool front_face;
+    Vec3     point;
+    Vec3     normal;
+    Material material;
+    RgbColor albedo;
+    f32      t;
+    bool     front_face;
 };
 
 struct Sphere {
-    Vec3 center;
-    f32  radius;
+    Vec3     center;
+    RgbColor albedo;
+    f32      radius;
+    Material material;
 };
 
 struct Point {
@@ -100,8 +109,10 @@ static const Vec3 FOCAL_LENGTH = {
 };
 
 static const Sphere SPHERES[N_SPHERES] = {
-    {{0.0f, 0.0f, -1.0f}, 0.5f},
-    {{0.0f, -100.5f, -1.0f}, 100.0f},
+    {{0.0f, 0.0f, -1.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, LAMBERTIAN},
+    {{0.0f, -100.5f, -1.0f}, {0.8f, 0.8f, 0.0f}, 100.0f, LAMBERTIAN},
+    {{1.0f, 0.0f, -1.0f}, {0.8f, 0.6f, 0.2f}, 0.5f, METAL},
+    {{-1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, METAL},
 };
 
 static const Vec3 VIEWPORT_BOTTOM_LEFT =
@@ -122,6 +133,8 @@ static void set_record(HitRecord*    record,
     bool front_face = dot(ray->direction, outward_normal) < 0;
     record->front_face = front_face;
     record->normal = front_face ? outward_normal : -outward_normal;
+    record->material = sphere->material;
+    record->albedo = sphere->albedo;
 }
 
 static bool hit(const Sphere* sphere,
@@ -159,18 +172,38 @@ static Vec3 get_random_vec3(PcgRng* rng) {
     };
 }
 
-static Vec3 get_random_point(PcgRng* rng) {
+static Vec3 get_random_in_unit_sphere(PcgRng* rng) {
     for (;;) {
-        Vec3 point = get_random_vec3(rng);
-        point *= 2.0f;
-        point -= 1.0f;
+        Vec3 point = (get_random_vec3(rng) * 2.0f) - 1.0f;
         if (dot(point, point) < 1.0f) {
             return point;
         }
     }
 }
 
-/* NOTE: Stopped at `8.5 True Lambertian Reflection`. */
+static Vec3 get_random_unit_vector(PcgRng* rng) {
+    f32 a = get_random_f32(rng) * 2.0f * PI;
+    f32 z = (get_random_f32(rng) * 2.0f) - 1.0f;
+    f32 r = sqrtf(1.0f - (z * z));
+    return {
+        r * cosf(a),
+        r * sinf(a),
+        z,
+    };
+}
+
+static Vec3 get_random_in_hemisphere(PcgRng* rng, Vec3 normal) {
+    Vec3 point = get_random_in_unit_sphere(rng);
+    if (0.0f < dot(point, normal)) {
+        return point;
+    }
+    return -point;
+}
+
+static Vec3 reflect(Vec3 v, Vec3 n) {
+    return v - (2.0f * dot(v, n) * n);
+}
+
 RgbColor get_color(const Ray*, PcgRng*, u16);
 RgbColor get_color(const Ray* ray, PcgRng* rng, u16 depth) {
     if (depth < 1u) {
@@ -188,13 +221,32 @@ RgbColor get_color(const Ray* ray, PcgRng* rng, u16 depth) {
         }
     }
     if (hit_anything) {
-        Vec3 target = nearest_record.point + nearest_record.normal +
-                      get_random_point(rng);
-        Ray bounce_ray = {
-            nearest_record.point,
-            target - nearest_record.point,
-        };
-        return 0.5f * get_color(&bounce_ray, rng, (u16)(depth - 1u));
+        switch (nearest_record.material) {
+        case LAMBERTIAN: {
+            Vec3 direction =
+                nearest_record.normal + get_random_unit_vector(rng);
+            Ray scattered = {
+                nearest_record.point,
+                direction,
+            };
+            RgbColor attenuation = nearest_record.albedo;
+            return attenuation * get_color(&scattered, rng, (u16)(depth - 1u));
+        }
+        case METAL: {
+            Vec3 reflected =
+                reflect(unit(ray->direction), nearest_record.normal);
+            Ray scattered = {
+                nearest_record.point,
+                reflected,
+            };
+            RgbColor attenuation = nearest_record.albedo;
+            if (0.0f < dot(scattered.direction, nearest_record.normal)) {
+                return attenuation *
+                       get_color(&scattered, rng, (u16(depth - 1u)));
+            }
+            return {};
+        }
+        }
     }
     f32      t = 0.5f * (unit(ray->direction).y + 1.0f);
     RgbColor color = {
@@ -282,14 +334,20 @@ static void set_pixels(Memory* memory) {
 }
 
 int main() {
-    printf("sizeof(Vec3)    : %zu\n"
-           "sizeof(Ray)     : %zu\n"
-           "sizeof(Point)   : %zu\n"
-           "sizeof(Block)   : %zu\n"
-           "sizeof(Payload) : %zu\n"
-           "sizeof(Memory)  : %zu\n"
+    printf("sizeof(Vec3)      : %zu\n"
+           "sizeof(Material)  : %zu\n"
+           "sizeof(HitRecord) : %zu\n"
+           "sizeof(Sphere)    : %zu\n"
+           "sizeof(Ray)       : %zu\n"
+           "sizeof(Point)     : %zu\n"
+           "sizeof(Block)     : %zu\n"
+           "sizeof(Payload)   : %zu\n"
+           "sizeof(Memory)    : %zu\n"
            "\n",
            sizeof(Vec3),
+           sizeof(Material),
+           sizeof(HitRecord),
+           sizeof(Sphere),
            sizeof(Ray),
            sizeof(Point),
            sizeof(Block),

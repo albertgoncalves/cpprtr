@@ -25,6 +25,14 @@ static RgbColor& operator+=(RgbColor& a, f32 b) {
     return a;
 }
 
+static RgbColor operator*(RgbColor a, RgbColor b) {
+    return {
+        a.red * b.red,
+        a.green * b.green,
+        a.blue * b.blue,
+    };
+}
+
 static RgbColor operator*(f32 a, RgbColor b) {
     return {
         a * b.red,
