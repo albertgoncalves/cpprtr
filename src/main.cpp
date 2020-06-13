@@ -14,9 +14,7 @@
 #define FLOAT_HEIGHT 512.0f
 #define FLOAT_WIDTH  512.0f
 
-#define N_SPHERES 4u
-
-#define N_BOUNCES         8u
+#define N_BOUNCES         64u
 #define SAMPLES_PER_PIXEL 64u
 #define EPSILON           0.001f
 
@@ -43,6 +41,12 @@ struct Ray {
 enum Material {
     LAMBERTIAN,
     METAL,
+    DIELECTRIC,
+};
+
+union Features {
+    f32 fuzz;
+    f32 refractive_index;
 };
 
 struct HitRecord {
@@ -50,7 +54,7 @@ struct HitRecord {
     Vec3     normal;
     Material material;
     RgbColor albedo;
-    f32      fuzz;
+    Features features;
     f32      t;
     bool     front_face;
 };
@@ -59,7 +63,7 @@ struct Sphere {
     Vec3     center;
     RgbColor albedo;
     f32      radius;
-    f32      fuzz;
+    Features features;
     Material material;
 };
 
@@ -93,28 +97,31 @@ static const Vec3 ORIGIN = {
 };
 
 static const Vec3 VIEWPORT_WIDTH = {
-    2.0f,
+    1.0f,
     0.0f,
     0.0f,
 };
 
 static const Vec3 VIEWPORT_HEIGHT = {
     0.0f,
-    2.0f,
+    1.0f,
     0.0f,
 };
 
 static const Vec3 FOCAL_LENGTH = {
     0.0f,
     0.0f,
-    1.0f,
+    0.5f,
 };
 
+#define N_SPHERES 5u
+
 static const Sphere SPHERES[N_SPHERES] = {
-    {{0.0f, 0.0f, -1.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
-    {{0.0f, -100.5f, -1.0f}, {0.8f, 0.8f, 0.0f}, 100.0f, 0.0f, LAMBERTIAN},
-    {{1.0f, 0.0f, -1.0f}, {0.8f, 0.6f, 0.2f}, 0.5f, 0.1f, METAL},
-    {{-1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.05f, METAL},
+    {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
+    {{0.0f, -1000.5f, -1.0f}, {0.5f, 0.5f, 0.5f}, 1000.0f, 0.0f, LAMBERTIAN},
+    {{1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.05f, METAL},
+    {{-1.0f, 0.0f, -1.0f}, {}, 0.5f, 1.5f, DIELECTRIC},
+    {{-1.0f, 0.0f, -1.0f}, {}, -0.475f, 1.5f, DIELECTRIC},
 };
 
 static const Vec3 VIEWPORT_BOTTOM_LEFT =
@@ -137,7 +144,7 @@ static void set_record(HitRecord*    record,
     record->normal = front_face ? outward_normal : -outward_normal;
     record->material = sphere->material;
     record->albedo = sphere->albedo;
-    record->fuzz = sphere->fuzz;
+    record->features = sphere->features;
 }
 
 static bool hit(const Sphere* sphere,
@@ -207,48 +214,100 @@ static Vec3 reflect(Vec3 v, Vec3 n) {
     return v - (2.0f * dot(v, n) * n);
 }
 
-RgbColor get_color(const Ray*, PcgRng*, u16);
-RgbColor get_color(const Ray* ray, PcgRng* rng, u16 depth) {
+static Vec3 refract(Vec3 uv, Vec3 n, f32 etai_over_etat) {
+    f32  cos_theta = dot(-uv, n);
+    Vec3 parallel = etai_over_etat * (uv + (cos_theta * n));
+    f32  length_squared = dot(parallel, parallel);
+    Vec3 perpendicular;
+    if (1.0f <= length_squared) {
+        perpendicular = {};
+    } else {
+        perpendicular = (-sqrtf(1.0f - length_squared)) * n;
+    }
+    return parallel + perpendicular;
+}
+
+static f32 schlick(f32 cosine, f32 refreactive_index) {
+    f32 r0 = (1.0f - refreactive_index) / (1.0f + refreactive_index);
+    r0 *= r0;
+    return r0 + ((1.0f - r0) * powf(1.0f - cosine, 5.0f));
+}
+
+RgbColor get_color(const Ray*, PcgRng*, u8);
+RgbColor get_color(const Ray* ray, PcgRng* rng, u8 depth) {
     if (depth < 1u) {
         return {};
     }
-    HitRecord last_record = {};
-    HitRecord nearest_record = {};
+    HitRecord last_hit = {};
+    HitRecord nearest_hit = {};
     bool      hit_anything = false;
     f32       t_nearest = F32_MAX;
     for (u8 i = 0; i < N_SPHERES; ++i) {
-        if (hit(&SPHERES[i], ray, &last_record, EPSILON, t_nearest)) {
+        if (hit(&SPHERES[i], ray, &last_hit, EPSILON, t_nearest)) {
             hit_anything = true;
-            t_nearest = last_record.t;
-            nearest_record = last_record;
+            t_nearest = last_hit.t;
+            nearest_hit = last_hit;
         }
     }
     if (hit_anything) {
-        switch (nearest_record.material) {
+        switch (nearest_hit.material) {
         case LAMBERTIAN: {
-            Vec3 direction =
-                nearest_record.normal + get_random_unit_vector(rng);
-            Ray scattered = {
-                nearest_record.point,
+            Vec3 direction = nearest_hit.normal + get_random_unit_vector(rng);
+            Ray  scattered = {
+                nearest_hit.point,
                 direction,
             };
-            RgbColor attenuation = nearest_record.albedo;
-            return attenuation * get_color(&scattered, rng, (u16)(depth - 1u));
+            RgbColor attenuation = nearest_hit.albedo;
+            return attenuation * get_color(&scattered, rng, (u8)(depth - 1u));
         }
         case METAL: {
-            Vec3 reflected =
-                reflect(unit(ray->direction), nearest_record.normal);
-            Ray scattered = {
-                nearest_record.point,
-                reflected +
-                    (nearest_record.fuzz * get_random_in_unit_sphere(rng)),
+            Vec3 reflected = reflect(unit(ray->direction), nearest_hit.normal);
+            Ray  scattered = {
+                nearest_hit.point,
+                reflected + (nearest_hit.features.fuzz *
+                             get_random_in_unit_sphere(rng)),
             };
-            RgbColor attenuation = nearest_record.albedo;
-            if (0.0f < dot(scattered.direction, nearest_record.normal)) {
+            RgbColor attenuation = nearest_hit.albedo;
+            if (0.0f < dot(scattered.direction, nearest_hit.normal)) {
                 return attenuation *
-                       get_color(&scattered, rng, (u16(depth - 1u)));
+                       get_color(&scattered, rng, (u8(depth - 1u)));
             }
             return {};
+        }
+        case DIELECTRIC: {
+            RgbColor attenuation = {
+                1.0f,
+                1.0f,
+                1.0f,
+            };
+            f32 etai_over_etat =
+                nearest_hit.front_face
+                    ? 1.0f / nearest_hit.features.refractive_index
+                    : nearest_hit.features.refractive_index;
+            Vec3 direction = unit(ray->direction);
+            f32  cos_theta = fminf(dot(-direction, nearest_hit.normal), 1.0f);
+            f32  sin_theta = sqrtf(1.0f - (cos_theta * cos_theta));
+            if (1.0f < (etai_over_etat * sin_theta)) {
+                Ray scattered = {
+                    nearest_hit.point,
+                    reflect(direction, nearest_hit.normal),
+                };
+                return attenuation *
+                       get_color(&scattered, rng, (u8)(depth - 1u));
+            }
+            if (get_random_f32(rng) < schlick(cos_theta, etai_over_etat)) {
+                Ray scattered = {
+                    nearest_hit.point,
+                    reflect(direction, nearest_hit.normal),
+                };
+                return attenuation *
+                       get_color(&scattered, rng, (u8)(depth - 1u));
+            }
+            Ray scattered = {
+                nearest_hit.point,
+                refract(direction, nearest_hit.normal, etai_over_etat),
+            };
+            return attenuation * get_color(&scattered, rng, (u8)(depth - 1u));
         }
         }
     }

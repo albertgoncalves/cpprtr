@@ -40,8 +40,7 @@ static u32 get_random_u32_below(PcgRng* rng, u32 bound) {
 }
 
 static f32 get_random_f32(PcgRng* rng) {
-    u32 value = get_random_u32_below(rng, U32_MAX);
-    return (f32)value / (f32)U32_MAX;
+    return (f32)get_random_u32_below(rng, U32_MAX) / (f32)U32_MAX;
 }
 
 #endif
