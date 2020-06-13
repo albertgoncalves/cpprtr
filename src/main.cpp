@@ -80,6 +80,9 @@ struct Block {
 struct Payload {
     Pixel* buffer;
     Block* blocks;
+    Vec3   u;
+    Vec3   w;
+    Vec3   v;
     Vec3   origin;
     Vec3   horizontal;
     Vec3   vertical;
@@ -115,6 +118,12 @@ static const Vec3 UP = {
 static const f32 VERTICAL_FOV = 90.0f;
 
 static const f32 ASPECT_RATIO = FLOAT_WIDTH / FLOAT_HEIGHT;
+
+static const f32 APERTURE = 0.1f;
+
+static const f32 LENS_RADIUS = APERTURE / 2.0f;
+
+static const f32 FOCUS_DISTANCE = len(LOOK_FROM - LOOK_AT);
 
 #define N_SPHERES 5u
 
@@ -328,27 +337,45 @@ static void set_color(Pixel* pixel, RgbColor* color) {
     pixel->blue = (u8)(RGB_COLOR_SCALE * sqrtf(color->blue));
 }
 
+static Vec3 random_in_unit_disk(PcgRng* rng) {
+    for (;;) {
+        Vec3 point = {
+            (get_random_f32(rng) * 2.0f) - 1.0f,
+            (get_random_f32(rng) * 2.0f) - 1.0f,
+            0.0f,
+        };
+        if (dot(point, point) < 1.0f) {
+            return point;
+        }
+    }
+}
+
 static void render_block(Pixel*  pixels,
                          Block   block,
+                         Vec3    u,
+                         Vec3    v,
                          Vec3    origin,
                          Vec3    horizontal,
                          Vec3    vertical,
                          Vec3    bottom_left,
                          PcgRng* rng) {
     for (u32 j = block.start.y; j < block.end.y; ++j) {
-        u32 offset = j * IMAGE_WIDTH;
+        u32 j_offset = j * IMAGE_WIDTH;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
             RgbColor color = {};
             for (u8 _ = 0; _ < SAMPLES_PER_PIXEL; ++_) {
-                f32 x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
-                f32 y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
-                Ray ray = {
-                    origin,
-                    (bottom_left + (x * horizontal) + (y * vertical)) - origin,
+                f32  x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
+                f32  y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
+                Vec3 lens_point = LENS_RADIUS * random_in_unit_disk(rng);
+                Vec3 lens_offset = (u * lens_point.x) + (v * lens_point.y);
+                Ray  ray = {
+                    origin + lens_offset,
+                    (bottom_left + (x * horizontal) + (y * vertical)) -
+                        origin - lens_offset,
                 };
                 color += get_color(&ray, rng, N_BOUNCES);
             }
-            set_color(&pixels[i + offset], &color);
+            set_color(&pixels[i + j_offset], &color);
         }
     }
 }
@@ -365,6 +392,8 @@ static void* thread_render(void* args) {
         }
         render_block(buffer,
                      payload->blocks[index],
+                     payload->u,
+                     payload->v,
                      payload->origin,
                      payload->horizontal,
                      payload->vertical,
@@ -378,18 +407,19 @@ static void set_pixels(Memory* memory) {
     payload.buffer = memory->image.pixels;
     payload.blocks = memory->blocks;
     {
-        f32  theta = degrees_to_radians(VERTICAL_FOV);
-        f32  h = tanf(theta / 2.0f);
-        f32  viewport_height = 2.0f * h;
-        f32  viewport_width = ASPECT_RATIO * viewport_height;
-        Vec3 w = unit(LOOK_FROM - LOOK_AT);
-        Vec3 u = unit(cross(UP, w));
-        Vec3 v = cross(w, u);
+        f32 theta = degrees_to_radians(VERTICAL_FOV);
+        f32 h = tanf(theta / 2.0f);
+        f32 viewport_height = 2.0f * h;
+        f32 viewport_width = ASPECT_RATIO * viewport_height;
+        payload.w = unit(LOOK_FROM - LOOK_AT);
+        payload.u = unit(cross(UP, payload.w));
+        payload.v = cross(payload.w, payload.u);
         payload.origin = LOOK_FROM;
-        payload.horizontal = viewport_width * u;
-        payload.vertical = viewport_height * v;
+        payload.horizontal = FOCUS_DISTANCE * viewport_width * payload.u;
+        payload.vertical = FOCUS_DISTANCE * viewport_height * payload.v;
         payload.bottom_left = payload.origin - (payload.horizontal / 2.0f) -
-                              (payload.vertical / 2.0f) - w;
+                              (payload.vertical / 2.0f) -
+                              (FOCUS_DISTANCE * payload.w);
     }
     u16 index = 0;
     for (u32 y = 0; y < Y_BLOCKS; ++y) {
