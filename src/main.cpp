@@ -8,21 +8,21 @@
 #include "types.h"
 
 #define IMAGE_WIDTH  512u
-#define IMAGE_HEIGHT 512u
-#define N_PIXELS     262144u
+#define IMAGE_HEIGHT 768u
+#define N_PIXELS     393216u
 
-#define FLOAT_HEIGHT 512.0f
 #define FLOAT_WIDTH  512.0f
+#define FLOAT_HEIGHT 768.0f
 
-#define N_BOUNCES         64u
-#define SAMPLES_PER_PIXEL 64u
-#define EPSILON           0.001f
+#define N_BOUNCES         32u
+#define SAMPLES_PER_PIXEL 32u
+#define EPSILON           0.00001f
 
 #define BLOCK_WIDTH  64u
 #define BLOCK_HEIGHT 64u
 #define X_BLOCKS     8u
-#define Y_BLOCKS     8u
-#define N_BLOCKS     64u
+#define Y_BLOCKS     12u
+#define N_BLOCKS     96u
 
 #define N_THREADS 4u
 
@@ -80,6 +80,10 @@ struct Block {
 struct Payload {
     Pixel* buffer;
     Block* blocks;
+    Vec3   origin;
+    Vec3   horizontal;
+    Vec3   vertical;
+    Vec3   bottom_left;
 };
 
 struct Memory {
@@ -90,42 +94,37 @@ struct Memory {
 
 static u16Atomic INDEX;
 
-static const Vec3 ORIGIN = {
-    0.0f,
-    0.0f,
-    0.0f,
+static const Vec3 LOOK_FROM = {
+    -2.0f,
+    1.0f,
+    0.25f,
 };
 
-static const Vec3 VIEWPORT_WIDTH = {
+static const Vec3 LOOK_AT = {
+    0.0f,
+    0.0f,
+    -1.0f,
+};
+
+static const Vec3 UP = {
+    0.0f,
     1.0f,
     0.0f,
-    0.0f,
 };
 
-static const Vec3 VIEWPORT_HEIGHT = {
-    0.0f,
-    1.0f,
-    0.0f,
-};
+static const f32 VERTICAL_FOV = 90.0f;
 
-static const Vec3 FOCAL_LENGTH = {
-    0.0f,
-    0.0f,
-    0.5f,
-};
+static const f32 ASPECT_RATIO = FLOAT_WIDTH / FLOAT_HEIGHT;
 
 #define N_SPHERES 5u
 
 static const Sphere SPHERES[N_SPHERES] = {
     {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
-    {{0.0f, -1000.5f, -1.0f}, {0.5f, 0.5f, 0.5f}, 1000.0f, 0.0f, LAMBERTIAN},
+    {{0.0f, -50.5f, -1.0f}, {0.5f, 0.5f, 0.5f}, 50.0f, 0.0f, LAMBERTIAN},
     {{1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.05f, METAL},
     {{-1.0f, 0.0f, -1.0f}, {}, 0.5f, 1.5f, DIELECTRIC},
     {{-1.0f, 0.0f, -1.0f}, {}, -0.475f, 1.5f, DIELECTRIC},
 };
-
-static const Vec3 VIEWPORT_BOTTOM_LEFT =
-    ORIGIN - (VIEWPORT_WIDTH / 2.0f) - (VIEWPORT_HEIGHT / 2.0f) - FOCAL_LENGTH;
 
 static Vec3 at(const Ray* ray, f32 t) {
     return ray->origin + (ray->direction * t);
@@ -329,7 +328,13 @@ static void set_color(Pixel* pixel, RgbColor* color) {
     pixel->blue = (u8)(RGB_COLOR_SCALE * sqrtf(color->blue));
 }
 
-static void render_block(Pixel* pixels, Block block, PcgRng* rng) {
+static void render_block(Pixel*  pixels,
+                         Block   block,
+                         Vec3    origin,
+                         Vec3    horizontal,
+                         Vec3    vertical,
+                         Vec3    bottom_left,
+                         PcgRng* rng) {
     for (u32 j = block.start.y; j < block.end.y; ++j) {
         u32 offset = j * IMAGE_WIDTH;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
@@ -338,10 +343,8 @@ static void render_block(Pixel* pixels, Block block, PcgRng* rng) {
                 f32 x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
                 f32 y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
                 Ray ray = {
-                    ORIGIN,
-                    (VIEWPORT_BOTTOM_LEFT + (x * VIEWPORT_WIDTH) +
-                     (y * VIEWPORT_HEIGHT)) -
-                        ORIGIN,
+                    origin,
+                    (bottom_left + (x * horizontal) + (y * vertical)) - origin,
                 };
                 color += get_color(&ray, rng, N_BOUNCES);
             }
@@ -360,7 +363,13 @@ static void* thread_render(void* args) {
         if (N_BLOCKS <= index) {
             return NULL;
         }
-        render_block(buffer, payload->blocks[index], &rng);
+        render_block(buffer,
+                     payload->blocks[index],
+                     payload->origin,
+                     payload->horizontal,
+                     payload->vertical,
+                     payload->bottom_left,
+                     &rng);
     }
 }
 
@@ -368,6 +377,20 @@ static void set_pixels(Memory* memory) {
     Payload payload;
     payload.buffer = memory->image.pixels;
     payload.blocks = memory->blocks;
+    {
+        f32  theta = degrees_to_radians(VERTICAL_FOV);
+        f32  h = tanf(theta / 2.0f);
+        f32  viewport_height = 2.0f * h;
+        f32  viewport_width = ASPECT_RATIO * viewport_height;
+        Vec3 w = unit(LOOK_FROM - LOOK_AT);
+        Vec3 u = unit(cross(UP, w));
+        Vec3 v = cross(w, u);
+        payload.origin = LOOK_FROM;
+        payload.horizontal = viewport_width * u;
+        payload.vertical = viewport_height * v;
+        payload.bottom_left = payload.origin - (payload.horizontal / 2.0f) -
+                              (payload.vertical / 2.0f) - w;
+    }
     u16 index = 0;
     for (u32 y = 0; y < Y_BLOCKS; ++y) {
         for (u32 x = 0; x < X_BLOCKS; ++x) {
