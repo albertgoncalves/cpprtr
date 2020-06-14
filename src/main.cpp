@@ -162,8 +162,11 @@ static void set_hit(Hit* hit, const Sphere* sphere, const Ray* ray, f32 t) {
     hit->features = sphere->features;
 }
 
-static bool
-hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t_min, f32 t_max) {
+static bool hit(const Sphere* sphere,
+                const Ray*    ray,
+                Hit*          hit,
+                f32           t_min,
+                f32           t_max) {
     Vec3 origin_center = ray->origin - sphere->center;
     f32  a = dot(ray->direction, ray->direction);
     f32  half_b = dot(origin_center, ray->direction);
