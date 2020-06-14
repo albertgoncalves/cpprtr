@@ -264,20 +264,19 @@ RgbColor get_color(const Ray* ray, PcgRng* rng, u8 depth) {
     if (hit_anything) {
         switch (nearest_hit.material) {
         case LAMBERTIAN: {
-            Vec3 direction = nearest_hit.normal + get_random_unit_vector(rng);
-            Ray  scattered = {
+            Ray scattered = {
                 nearest_hit.point,
-                direction,
+                nearest_hit.normal + get_random_unit_vector(rng),
             };
             RgbColor attenuation = nearest_hit.albedo;
             return attenuation * get_color(&scattered, rng, (u8)(depth - 1u));
         }
         case METAL: {
-            Vec3 reflected = reflect(unit(ray->direction), nearest_hit.normal);
-            Ray  scattered = {
+            Ray scattered = {
                 nearest_hit.point,
-                reflected + (nearest_hit.features.fuzz *
-                             get_random_in_unit_sphere(rng)),
+                reflect(unit(ray->direction), nearest_hit.normal) +
+                    (nearest_hit.features.fuzz *
+                     get_random_in_unit_sphere(rng)),
             };
             RgbColor attenuation = nearest_hit.albedo;
             if (0.0f < dot(scattered.direction, nearest_hit.normal)) {
@@ -333,14 +332,6 @@ RgbColor get_color(const Ray* ray, PcgRng* rng, u8 depth) {
     return color;
 }
 
-static void set_color(Pixel* pixel, RgbColor* color) {
-    *color /= (f32)SAMPLES_PER_PIXEL;
-    clamp(color, 0.0f, 1.0f);
-    pixel->red = (u8)(RGB_COLOR_SCALE * sqrtf(color->red));
-    pixel->green = (u8)(RGB_COLOR_SCALE * sqrtf(color->green));
-    pixel->blue = (u8)(RGB_COLOR_SCALE * sqrtf(color->blue));
-}
-
 static Vec3 random_in_unit_disk(PcgRng* rng) {
     for (;;) {
         Vec3 point = {
@@ -352,6 +343,14 @@ static Vec3 random_in_unit_disk(PcgRng* rng) {
             return point;
         }
     }
+}
+
+static void set_color(Pixel* pixel, RgbColor* color) {
+    *color /= (f32)SAMPLES_PER_PIXEL;
+    clamp(color, 0.0f, 1.0f);
+    pixel->red = (u8)(RGB_COLOR_SCALE * sqrtf(color->red));
+    pixel->green = (u8)(RGB_COLOR_SCALE * sqrtf(color->green));
+    pixel->blue = (u8)(RGB_COLOR_SCALE * sqrtf(color->blue));
 }
 
 static void render_block(Pixel*  pixels,
@@ -384,13 +383,14 @@ static void render_block(Pixel*  pixels,
 static void* thread_render(void* args) {
     Payload* payload = (Payload*)args;
     Pixel*   buffer = payload->buffer;
-    Camera   camera = {};
-    camera.u = *payload->u;
-    camera.v = *payload->v;
-    camera.origin = *payload->origin;
-    camera.horizontal = *payload->horizontal;
-    camera.vertical = *payload->vertical;
-    camera.bottom_left = *payload->bottom_left;
+    Camera   camera = {
+        *payload->u,
+        *payload->v,
+        *payload->origin,
+        *payload->horizontal,
+        *payload->vertical,
+        *payload->bottom_left,
+    };
     PcgRng rng = {};
     init_random(&rng);
     for (;;) {
@@ -415,15 +415,16 @@ static void set_pixels(Memory* memory) {
     Vec3 vertical = FOCUS_DISTANCE * viewport_height * v;
     Vec3 bottom_left = origin - (horizontal / 2.0f) - (vertical / 2.0f) -
                        (FOCUS_DISTANCE * w);
-    Payload payload;
-    payload.buffer = memory->image.pixels;
-    payload.blocks = memory->blocks;
-    payload.u = &u;
-    payload.v = &v;
-    payload.origin = &origin;
-    payload.horizontal = &horizontal;
-    payload.vertical = &vertical;
-    payload.bottom_left = &bottom_left;
+    Payload payload = {
+        memory->image.pixels,
+        memory->blocks,
+        &u,
+        &v,
+        &origin,
+        &horizontal,
+        &vertical,
+        &bottom_left,
+    };
     u16 index = 0;
     for (u32 y = 0; y < Y_BLOCKS; ++y) {
         for (u32 x = 0; x < X_BLOCKS; ++x) {
