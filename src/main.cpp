@@ -130,9 +130,9 @@ static const f32 FOCUS_DISTANCE = len(LOOK_FROM - LOOK_AT);
 static const Sphere SPHERES[N_SPHERES] = {
     {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
     {{0.0f, -50.5f, -1.0f}, {0.5f, 0.5f, 0.5f}, 50.0f, 0.0f, LAMBERTIAN},
-    {{1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.025f, METAL},
-    {{-1.0f, 0.0f, -1.0f}, {}, 0.5f, 1.5f, DIELECTRIC},
-    {{-1.0f, 0.0f, -1.0f}, {}, -0.475f, 1.5f, DIELECTRIC},
+    {{1.0f, 0.0f, -0.5f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.025f, METAL},
+    {{-1.0f, 0.0f, -0.75f}, {}, 0.5f, 1.5f, DIELECTRIC},
+    {{-1.0f, 0.0f, -0.75f}, {}, -0.475f, 1.5f, DIELECTRIC},
 };
 
 static Vec3 at(const Ray* ray, f32 t) {
