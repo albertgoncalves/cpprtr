@@ -235,85 +235,85 @@ static f32 schlick(f32 cosine, f32 refreactive_index) {
     return r0 + ((1.0f - r0) * powf(1.0f - cosine, 5.0f));
 }
 
-RgbColor get_color(const Ray*, PcgRng*, u8);
-RgbColor get_color(const Ray* ray, PcgRng* rng, u8 depth) {
-    if (depth < 1u) {
-        return {};
-    }
-    Hit  last_hit = {};
-    Hit  nearest_hit = {};
-    bool hit_anything = false;
-    f32  t_nearest = F32_MAX;
-    for (u8 i = 0; i < N_SPHERES; ++i) {
-        if (hit(&SPHERES[i], ray, &last_hit, EPSILON, t_nearest)) {
-            hit_anything = true;
-            t_nearest = last_hit.t;
-            nearest_hit = last_hit;
-        }
-    }
-    if (hit_anything) {
-        switch (nearest_hit.material) {
-        case LAMBERTIAN: {
-            Ray scattered = {
-                nearest_hit.point,
-                nearest_hit.normal + get_random_unit_vector(rng),
-            };
-            RgbColor attenuation = nearest_hit.albedo;
-            return attenuation * get_color(&scattered, rng, (u8)(depth - 1u));
-        }
-        case METAL: {
-            Ray scattered = {
-                nearest_hit.point,
-                reflect(unit(ray->direction), nearest_hit.normal) +
-                    (nearest_hit.features.fuzz *
-                     get_random_in_unit_sphere(rng)),
-            };
-            RgbColor attenuation = nearest_hit.albedo;
-            if (0.0f < dot(scattered.direction, nearest_hit.normal)) {
-                return attenuation *
-                       get_color(&scattered, rng, (u8(depth - 1u)));
-            }
-            return {};
-        }
-        case DIELECTRIC: {
-            RgbColor attenuation = {
-                1.0f,
-                1.0f,
-                1.0f,
-            };
-            f32 etai_over_etat =
-                nearest_hit.front_face
-                    ? 1.0f / nearest_hit.features.refractive_index
-                    : nearest_hit.features.refractive_index;
-            Vec3 direction = unit(ray->direction);
-            f32  cos_theta = fminf(dot(-direction, nearest_hit.normal), 1.0f);
-            f32  sin_theta = sqrtf(1.0f - (cos_theta * cos_theta));
-            if ((1.0f < (etai_over_etat * sin_theta)) ||
-                (get_random_f32(rng) < schlick(cos_theta, etai_over_etat)))
-            {
-                Ray scattered = {
-                    nearest_hit.point,
-                    reflect(direction, nearest_hit.normal),
-                };
-                return attenuation *
-                       get_color(&scattered, rng, (u8)(depth - 1u));
-            }
-            Ray scattered = {
-                nearest_hit.point,
-                refract(direction, nearest_hit.normal, etai_over_etat),
-            };
-            return attenuation * get_color(&scattered, rng, (u8)(depth - 1u));
-        }
-        }
-    }
-    f32      t = 0.5f * (unit(ray->direction).y + 1.0f);
-    RgbColor color = {
-        t * 0.5f,
-        t * 0.7f,
-        t,
+static RgbColor get_color(const Ray* ray, PcgRng* rng) {
+    Ray      last_ray = *ray;
+    RgbColor attenuation = {
+        1.0f,
+        1.0f,
+        1.0f,
     };
-    color += 1.0f - t;
-    return color;
+    for (u8 _ = 0; _ < N_BOUNCES; ++_) {
+        Hit  last_hit = {};
+        Hit  nearest_hit = {};
+        bool hit_anything = false;
+        f32  t_nearest = F32_MAX;
+        for (u8 i = 0; i < N_SPHERES; ++i) {
+            if (hit(&SPHERES[i], &last_ray, &last_hit, EPSILON, t_nearest)) {
+                hit_anything = true;
+                t_nearest = last_hit.t;
+                nearest_hit = last_hit;
+            }
+        }
+        if (hit_anything) {
+            switch (nearest_hit.material) {
+            case LAMBERTIAN: {
+                last_ray = {
+                    nearest_hit.point,
+                    nearest_hit.normal + get_random_unit_vector(rng),
+                };
+                attenuation *= nearest_hit.albedo;
+                break;
+            }
+            case METAL: {
+                last_ray = {
+                    nearest_hit.point,
+                    reflect(unit(last_ray.direction), nearest_hit.normal) +
+                        (nearest_hit.features.fuzz *
+                         get_random_in_unit_sphere(rng)),
+                };
+                if (dot(last_ray.direction, nearest_hit.normal) <= 0.0f) {
+                    return {};
+                }
+                attenuation *= nearest_hit.albedo;
+                break;
+            }
+            case DIELECTRIC: {
+                f32 etai_over_etat =
+                    nearest_hit.front_face
+                        ? 1.0f / nearest_hit.features.refractive_index
+                        : nearest_hit.features.refractive_index;
+                Vec3 direction = unit(last_ray.direction);
+                f32  cos_theta =
+                    fminf(dot(-direction, nearest_hit.normal), 1.0f);
+                f32 sin_theta = sqrtf(1.0f - (cos_theta * cos_theta));
+                if ((1.0f < (etai_over_etat * sin_theta)) ||
+                    (get_random_f32(rng) < schlick(cos_theta, etai_over_etat)))
+                {
+                    last_ray = {
+                        nearest_hit.point,
+                        reflect(direction, nearest_hit.normal),
+                    };
+                } else {
+                    last_ray = {
+                        nearest_hit.point,
+                        refract(direction, nearest_hit.normal, etai_over_etat),
+                    };
+                }
+                break;
+            }
+            }
+        } else {
+            f32      t = 0.5f * (unit(last_ray.direction).y + 1.0f);
+            RgbColor color = {
+                t * 0.5f,
+                t * 0.7f,
+                t,
+            };
+            color += 1.0f - t;
+            return attenuation * color;
+        }
+    }
+    return attenuation;
 }
 
 static Vec3 random_in_unit_disk(PcgRng* rng) {
@@ -357,7 +357,7 @@ static void render_block(Pixel*  pixels,
                      (y * camera.vertical)) -
                         camera.origin - lens_offset,
                 };
-                color += get_color(&ray, rng, N_BOUNCES);
+                color += get_color(&ray, rng);
             }
             set_color(&pixels[i + j_offset], color);
         }
