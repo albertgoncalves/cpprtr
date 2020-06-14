@@ -24,7 +24,7 @@
 #define Y_BLOCKS     4u
 #define N_BLOCKS     24u
 
-#define N_THREADS 4u
+#define N_THREADS 3u
 
 #define FILEPATH "out/main.bmp"
 
@@ -136,8 +136,8 @@ static const Sphere SPHERES[N_SPHERES] = {
     {{0.0f, 0.0f, 0.35f}, {0.3f, 0.3f, 0.7f}, 0.5f, 0.0f, LAMBERTIAN},
     {{0.0f, 0.0f, -2.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
     {{1.15f, 0.0f, -0.85f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.025f, METAL},
-    {{0.85f, 0.0f, 0.25f}, {}, 0.5f, 1.5f, DIELECTRIC},
-    {{0.85f, 0.0f, 0.25f}, {}, -0.475f, 1.5f, DIELECTRIC},
+    {{1.0f, 0.0f, 0.25f}, {}, 0.5f, 1.5f, DIELECTRIC},
+    {{1.0f, 0.0f, 0.25f}, {}, -0.475f, 1.5f, DIELECTRIC},
     {{-1.0f, 0.0f, -0.35f}, {}, 0.5f, 1.5f, DIELECTRIC},
     {{-1.0f, 0.0f, -0.35f}, {}, -0.4f, 1.5f, DIELECTRIC},
     {{-1.25f, 0.0f, -1.75f}, {}, 0.5f, 1.5f, DIELECTRIC},
