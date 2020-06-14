@@ -7,22 +7,22 @@
 
 #include "types.h"
 
-#define IMAGE_WIDTH  512u
-#define IMAGE_HEIGHT 768u
+#define IMAGE_WIDTH  768u
+#define IMAGE_HEIGHT 512u
 #define N_PIXELS     393216u
 
-#define FLOAT_WIDTH  512.0f
-#define FLOAT_HEIGHT 768.0f
+#define FLOAT_WIDTH  768.0f
+#define FLOAT_HEIGHT 512.0f
 
 #define N_BOUNCES         32u
 #define SAMPLES_PER_PIXEL 32u
 #define EPSILON           0.00001f
 
-#define BLOCK_WIDTH  64u
-#define BLOCK_HEIGHT 64u
-#define X_BLOCKS     8u
-#define Y_BLOCKS     12u
-#define N_BLOCKS     96u
+#define BLOCK_WIDTH  128u
+#define BLOCK_HEIGHT 128u
+#define X_BLOCKS     6u
+#define Y_BLOCKS     4u
+#define N_BLOCKS     24u
 
 #define N_THREADS 4u
 
@@ -98,9 +98,9 @@ struct Memory {
 static u16Atomic INDEX;
 
 static const Vec3 LOOK_FROM = {
-    -2.0f,
-    1.0f,
-    0.25f,
+    -0.5f,
+    0.75f,
+    -0.25f,
 };
 
 static const Vec3 LOOK_AT = {
@@ -130,7 +130,7 @@ static const f32 FOCUS_DISTANCE = len(LOOK_FROM - LOOK_AT);
 static const Sphere SPHERES[N_SPHERES] = {
     {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
     {{0.0f, -50.5f, -1.0f}, {0.5f, 0.5f, 0.5f}, 50.0f, 0.0f, LAMBERTIAN},
-    {{1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.05f, METAL},
+    {{1.0f, 0.0f, -1.0f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.025f, METAL},
     {{-1.0f, 0.0f, -1.0f}, {}, 0.5f, 1.5f, DIELECTRIC},
     {{-1.0f, 0.0f, -1.0f}, {}, -0.475f, 1.5f, DIELECTRIC},
 };
