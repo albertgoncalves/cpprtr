@@ -217,14 +217,6 @@ static Vec3 get_random_unit_vector(PcgRng* rng) {
     };
 }
 
-static Vec3 get_random_in_hemisphere(PcgRng* rng, Vec3 normal) {
-    Vec3 point = get_random_in_unit_sphere(rng);
-    if (0.0f < dot(point, normal)) {
-        return point;
-    }
-    return -point;
-}
-
 static Vec3 reflect(Vec3 v, Vec3 n) {
     return v - (2.0f * dot(v, n) * n);
 }

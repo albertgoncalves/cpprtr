@@ -34,8 +34,6 @@ export FLAGS=(
     "-Wlogical-op"
     "-Wmissing-declarations"
     "-Wmissing-include-dirs"
-    "-Wno-unused-function"
-    "-Wno-unused-parameter"
     "-Wnull-dereference"
     "-Wpacked"
     "-Wpedantic"
@@ -101,6 +99,7 @@ build_all () {
         --enable=all \
         --suppress=cstyleCast \
         --suppress=missingIncludeSystem \
+        --suppress=oppositeExpression \
         --suppress=resourceLeak \
         "$WD/src"
     build_all

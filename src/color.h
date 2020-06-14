@@ -33,21 +33,6 @@ static RgbColor operator*(RgbColor a, RgbColor b) {
     };
 }
 
-static RgbColor operator*(f32 a, RgbColor b) {
-    return {
-        a * b.red,
-        a * b.green,
-        a * b.blue,
-    };
-}
-
-static RgbColor& operator*=(RgbColor& a, f32 b) {
-    a.red *= b;
-    a.green *= b;
-    a.blue *= b;
-    return a;
-}
-
 static RgbColor& operator/=(RgbColor& a, f32 b) {
     a.red /= b;
     a.green /= b;
