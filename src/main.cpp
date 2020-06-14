@@ -47,10 +47,10 @@ union Features {
 struct Hit {
     Vec3     point;
     Vec3     normal;
-    Material material;
     RgbColor albedo;
-    Features features;
     f32      t;
+    Features features;
+    Material material;
     bool     front_face;
 };
 
@@ -450,7 +450,9 @@ static void set_pixels(Memory* memory) {
 
 int main() {
     printf("sizeof(Vec3)     : %zu\n"
+           "sizeof(RgbColor) : %zu\n"
            "sizeof(Material) : %zu\n"
+           "sizeof(Features) : %zu\n"
            "sizeof(Hit)      : %zu\n"
            "sizeof(Sphere)   : %zu\n"
            "sizeof(Camera)   : %zu\n"
@@ -461,7 +463,9 @@ int main() {
            "sizeof(Memory)   : %zu\n"
            "\n",
            sizeof(Vec3),
+           sizeof(RgbColor),
            sizeof(Material),
+           sizeof(Features),
            sizeof(Hit),
            sizeof(Sphere),
            sizeof(Camera),
