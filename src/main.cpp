@@ -80,13 +80,12 @@ struct Block {
 struct Payload {
     Pixel* buffer;
     Block* blocks;
-    Vec3   u;
-    Vec3   w;
-    Vec3   v;
-    Vec3   origin;
-    Vec3   horizontal;
-    Vec3   vertical;
-    Vec3   bottom_left;
+    Vec3*  u;
+    Vec3*  v;
+    Vec3*  origin;
+    Vec3*  horizontal;
+    Vec3*  vertical;
+    Vec3*  bottom_left;
 };
 
 struct Memory {
@@ -392,35 +391,38 @@ static void* thread_render(void* args) {
         }
         render_block(buffer,
                      payload->blocks[index],
-                     payload->u,
-                     payload->v,
-                     payload->origin,
-                     payload->horizontal,
-                     payload->vertical,
-                     payload->bottom_left,
+                     *payload->u,
+                     *payload->v,
+                     *payload->origin,
+                     *payload->horizontal,
+                     *payload->vertical,
+                     *payload->bottom_left,
                      &rng);
     }
 }
 
 static void set_pixels(Memory* memory) {
+    f32  theta = degrees_to_radians(VERTICAL_FOV);
+    f32  h = tanf(theta / 2.0f);
+    f32  viewport_height = 2.0f * h;
+    f32  viewport_width = ASPECT_RATIO * viewport_height;
+    Vec3 w = unit(LOOK_FROM - LOOK_AT);
+    Vec3 u = unit(cross(UP, w));
+    Vec3 v = cross(w, u);
+    Vec3 origin = LOOK_FROM;
+    Vec3 horizontal = FOCUS_DISTANCE * viewport_width * u;
+    Vec3 vertical = FOCUS_DISTANCE * viewport_height * v;
+    Vec3 bottom_left = origin - (horizontal / 2.0f) - (vertical / 2.0f) -
+                       (FOCUS_DISTANCE * w);
     Payload payload;
     payload.buffer = memory->image.pixels;
     payload.blocks = memory->blocks;
-    {
-        f32 theta = degrees_to_radians(VERTICAL_FOV);
-        f32 h = tanf(theta / 2.0f);
-        f32 viewport_height = 2.0f * h;
-        f32 viewport_width = ASPECT_RATIO * viewport_height;
-        payload.w = unit(LOOK_FROM - LOOK_AT);
-        payload.u = unit(cross(UP, payload.w));
-        payload.v = cross(payload.w, payload.u);
-        payload.origin = LOOK_FROM;
-        payload.horizontal = FOCUS_DISTANCE * viewport_width * payload.u;
-        payload.vertical = FOCUS_DISTANCE * viewport_height * payload.v;
-        payload.bottom_left = payload.origin - (payload.horizontal / 2.0f) -
-                              (payload.vertical / 2.0f) -
-                              (FOCUS_DISTANCE * payload.w);
-    }
+    payload.u = &u;
+    payload.v = &v;
+    payload.origin = &origin;
+    payload.horizontal = &horizontal;
+    payload.vertical = &vertical;
+    payload.bottom_left = &bottom_left;
     u16 index = 0;
     for (u32 y = 0; y < Y_BLOCKS; ++y) {
         for (u32 x = 0; x < X_BLOCKS; ++x) {
