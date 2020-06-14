@@ -144,7 +144,7 @@ static Vec3 at(const Ray* ray, f32 t) {
     return ray->origin + (ray->direction * t);
 }
 
-static void set_hit(Hit* hit, const Sphere* sphere, const Ray* ray, f32 t) {
+static void set_hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t) {
     hit->t = t;
     Vec3 point = at(ray, t);
     hit->point = point;
@@ -172,12 +172,12 @@ static bool hit(const Sphere* sphere,
         f32 root = sqrtf(discriminant);
         f32 t = (-half_b - root) / a;
         if ((t_min < t) && (t < t_max)) {
-            set_hit(hit, sphere, ray, t);
+            set_hit(sphere, ray, hit, t);
             return true;
         }
         t = (-half_b + root) / a;
         if ((t_min < t) && (t < t_max)) {
-            set_hit(hit, sphere, ray, t);
+            set_hit(sphere, ray, hit, t);
             return true;
         }
     }
@@ -288,15 +288,9 @@ RgbColor get_color(const Ray* ray, PcgRng* rng, u8 depth) {
             Vec3 direction = unit(ray->direction);
             f32  cos_theta = fminf(dot(-direction, nearest_hit.normal), 1.0f);
             f32  sin_theta = sqrtf(1.0f - (cos_theta * cos_theta));
-            if (1.0f < (etai_over_etat * sin_theta)) {
-                Ray scattered = {
-                    nearest_hit.point,
-                    reflect(direction, nearest_hit.normal),
-                };
-                return attenuation *
-                       get_color(&scattered, rng, (u8)(depth - 1u));
-            }
-            if (get_random_f32(rng) < schlick(cos_theta, etai_over_etat)) {
+            if ((1.0f < (etai_over_etat * sin_theta)) ||
+                (get_random_f32(rng) < schlick(cos_theta, etai_over_etat)))
+            {
                 Ray scattered = {
                     nearest_hit.point,
                     reflect(direction, nearest_hit.normal),
