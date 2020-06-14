@@ -33,11 +33,6 @@
 #include "math.h"
 #include "random.h"
 
-struct Ray {
-    Vec3 origin;
-    Vec3 direction;
-};
-
 enum Material {
     LAMBERTIAN,
     METAL,
@@ -49,7 +44,7 @@ union Features {
     f32 refractive_index;
 };
 
-struct HitRecord {
+struct Hit {
     Vec3     point;
     Vec3     normal;
     Material material;
@@ -65,6 +60,20 @@ struct Sphere {
     f32      radius;
     Features features;
     Material material;
+};
+
+struct Camera {
+    Vec3 u;
+    Vec3 v;
+    Vec3 origin;
+    Vec3 horizontal;
+    Vec3 vertical;
+    Vec3 bottom_left;
+};
+
+struct Ray {
+    Vec3 origin;
+    Vec3 direction;
 };
 
 struct Point {
@@ -140,27 +149,21 @@ static Vec3 at(const Ray* ray, f32 t) {
     return ray->origin + (ray->direction * t);
 }
 
-static void set_record(HitRecord*    record,
-                       const Sphere* sphere,
-                       const Ray*    ray,
-                       f32           t) {
-    record->t = t;
+static void set_hit(Hit* hit, const Sphere* sphere, const Ray* ray, f32 t) {
+    hit->t = t;
     Vec3 point = at(ray, t);
-    record->point = point;
+    hit->point = point;
     Vec3 outward_normal = (point - sphere->center) / sphere->radius;
     bool front_face = dot(ray->direction, outward_normal) < 0;
-    record->front_face = front_face;
-    record->normal = front_face ? outward_normal : -outward_normal;
-    record->material = sphere->material;
-    record->albedo = sphere->albedo;
-    record->features = sphere->features;
+    hit->front_face = front_face;
+    hit->normal = front_face ? outward_normal : -outward_normal;
+    hit->material = sphere->material;
+    hit->albedo = sphere->albedo;
+    hit->features = sphere->features;
 }
 
-static bool hit(const Sphere* sphere,
-                const Ray*    ray,
-                HitRecord*    record,
-                f32           t_min,
-                f32           t_max) {
+static bool
+hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t_min, f32 t_max) {
     Vec3 origin_center = ray->origin - sphere->center;
     f32  a = dot(ray->direction, ray->direction);
     f32  half_b = dot(origin_center, ray->direction);
@@ -171,12 +174,12 @@ static bool hit(const Sphere* sphere,
         f32 root = sqrtf(discriminant);
         f32 t = (-half_b - root) / a;
         if ((t_min < t) && (t < t_max)) {
-            set_record(record, sphere, ray, t);
+            set_hit(hit, sphere, ray, t);
             return true;
         }
         t = (-half_b + root) / a;
         if ((t_min < t) && (t < t_max)) {
-            set_record(record, sphere, ray, t);
+            set_hit(hit, sphere, ray, t);
             return true;
         }
     }
@@ -247,10 +250,10 @@ RgbColor get_color(const Ray* ray, PcgRng* rng, u8 depth) {
     if (depth < 1u) {
         return {};
     }
-    HitRecord last_hit = {};
-    HitRecord nearest_hit = {};
-    bool      hit_anything = false;
-    f32       t_nearest = F32_MAX;
+    Hit  last_hit = {};
+    Hit  nearest_hit = {};
+    bool hit_anything = false;
+    f32  t_nearest = F32_MAX;
     for (u8 i = 0; i < N_SPHERES; ++i) {
         if (hit(&SPHERES[i], ray, &last_hit, EPSILON, t_nearest)) {
             hit_anything = true;
@@ -352,13 +355,8 @@ static Vec3 random_in_unit_disk(PcgRng* rng) {
 }
 
 static void render_block(Pixel*  pixels,
+                         Camera  camera,
                          Block   block,
-                         Vec3    u,
-                         Vec3    v,
-                         Vec3    origin,
-                         Vec3    horizontal,
-                         Vec3    vertical,
-                         Vec3    bottom_left,
                          PcgRng* rng) {
     for (u32 j = block.start.y; j < block.end.y; ++j) {
         u32 j_offset = j * IMAGE_WIDTH;
@@ -368,11 +366,13 @@ static void render_block(Pixel*  pixels,
                 f32  x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
                 f32  y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
                 Vec3 lens_point = LENS_RADIUS * random_in_unit_disk(rng);
-                Vec3 lens_offset = (u * lens_point.x) + (v * lens_point.y);
-                Ray  ray = {
-                    origin + lens_offset,
-                    (bottom_left + (x * horizontal) + (y * vertical)) -
-                        origin - lens_offset,
+                Vec3 lens_offset =
+                    (camera.u * lens_point.x) + (camera.v * lens_point.y);
+                Ray ray = {
+                    camera.origin + lens_offset,
+                    (camera.bottom_left + (x * camera.horizontal) +
+                     (y * camera.vertical)) -
+                        camera.origin - lens_offset,
                 };
                 color += get_color(&ray, rng, N_BOUNCES);
             }
@@ -384,22 +384,21 @@ static void render_block(Pixel*  pixels,
 static void* thread_render(void* args) {
     Payload* payload = (Payload*)args;
     Pixel*   buffer = payload->buffer;
-    PcgRng   rng = {};
+    Camera   camera = {};
+    camera.u = *payload->u;
+    camera.v = *payload->v;
+    camera.origin = *payload->origin;
+    camera.horizontal = *payload->horizontal;
+    camera.vertical = *payload->vertical;
+    camera.bottom_left = *payload->bottom_left;
+    PcgRng rng = {};
     init_random(&rng);
     for (;;) {
         u16 index = INDEX.fetch_add(1, std::memory_order_seq_cst);
         if (N_BLOCKS <= index) {
             return NULL;
         }
-        render_block(buffer,
-                     payload->blocks[index],
-                     *payload->u,
-                     *payload->v,
-                     *payload->origin,
-                     *payload->horizontal,
-                     *payload->vertical,
-                     *payload->bottom_left,
-                     &rng);
+        render_block(buffer, camera, payload->blocks[index], &rng);
     }
 }
 
@@ -454,20 +453,22 @@ static void set_pixels(Memory* memory) {
 }
 
 int main() {
-    printf("sizeof(Vec3)      : %zu\n"
-           "sizeof(Material)  : %zu\n"
-           "sizeof(HitRecord) : %zu\n"
-           "sizeof(Sphere)    : %zu\n"
-           "sizeof(Ray)       : %zu\n"
-           "sizeof(Point)     : %zu\n"
-           "sizeof(Block)     : %zu\n"
-           "sizeof(Payload)   : %zu\n"
-           "sizeof(Memory)    : %zu\n"
+    printf("sizeof(Vec3)     : %zu\n"
+           "sizeof(Material) : %zu\n"
+           "sizeof(Hit)      : %zu\n"
+           "sizeof(Sphere)   : %zu\n"
+           "sizeof(Camera)   : %zu\n"
+           "sizeof(Ray)      : %zu\n"
+           "sizeof(Point)    : %zu\n"
+           "sizeof(Block)    : %zu\n"
+           "sizeof(Payload)  : %zu\n"
+           "sizeof(Memory)   : %zu\n"
            "\n",
            sizeof(Vec3),
            sizeof(Material),
-           sizeof(HitRecord),
+           sizeof(Hit),
            sizeof(Sphere),
+           sizeof(Camera),
            sizeof(Ray),
            sizeof(Point),
            sizeof(Block),
