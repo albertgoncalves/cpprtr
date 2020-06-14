@@ -122,7 +122,7 @@ static const f32 VERTICAL_FOV = 90.0f;
 
 static const f32 ASPECT_RATIO = FLOAT_WIDTH / FLOAT_HEIGHT;
 
-static const f32 APERTURE = 0.15f;
+static const f32 APERTURE = 0.175f;
 
 static const f32 LENS_RADIUS = APERTURE / 2.0f;
 
@@ -131,7 +131,7 @@ static const f32 FOCUS_DISTANCE = len(LOOK_FROM - LOOK_AT);
 #define N_SPHERES 11u
 
 static const Sphere SPHERES[N_SPHERES] = {
-    {{0.0f, -50.5f, -1.0f}, {0.5f, 0.5f, 0.5f}, 50.0f, 0.0f, LAMBERTIAN},
+    {{0.0f, -50.5f, -1.0f}, {0.675f, 0.675f, 0.675f}, 50.0f, 0.0f, LAMBERTIAN},
     {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
     {{0.0f, 0.0f, 0.35f}, {0.3f, 0.3f, 0.7f}, 0.5f, 0.0f, LAMBERTIAN},
     {{0.0f, 0.0f, -2.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
@@ -141,7 +141,7 @@ static const Sphere SPHERES[N_SPHERES] = {
     {{-1.0f, 0.0f, -0.35f}, {}, 0.5f, 1.5f, DIELECTRIC},
     {{-1.0f, 0.0f, -0.35f}, {}, -0.4f, 1.5f, DIELECTRIC},
     {{-1.25f, 0.0f, -1.75f}, {}, 0.5f, 1.5f, DIELECTRIC},
-    {{-1.25f, 0.0f, -1.75f}, {}, -0.485f, 1.5f, DIELECTRIC},
+    {{-1.25f, 0.0f, -1.75f}, {}, -0.4f, 1.5f, DIELECTRIC},
 };
 
 static Vec3 at(const Ray* ray, f32 t) {
