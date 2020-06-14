@@ -160,7 +160,6 @@ static void set_hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t) {
 static bool get_hit(const Sphere* sphere,
                     const Ray*    ray,
                     Hit*          hit,
-                    f32           t_min,
                     f32           t_max) {
     Vec3 origin_center = ray->origin - sphere->center;
     f32  a = dot(ray->direction, ray->direction);
@@ -171,12 +170,12 @@ static bool get_hit(const Sphere* sphere,
     if (0.0f < discriminant) {
         f32 root = sqrtf(discriminant);
         f32 t = (-half_b - root) / a;
-        if ((t_min < t) && (t < t_max)) {
+        if ((EPSILON < t) && (t < t_max)) {
             set_hit(sphere, ray, hit, t);
             return true;
         }
         t = (-half_b + root) / a;
-        if ((t_min < t) && (t < t_max)) {
+        if ((EPSILON < t) && (t < t_max)) {
             set_hit(sphere, ray, hit, t);
             return true;
         }
@@ -248,8 +247,7 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
         bool hit_anything = false;
         f32  t_nearest = F32_MAX;
         for (u8 i = 0; i < N_SPHERES; ++i) {
-            if (get_hit(&SPHERES[i], &last_ray, &last_hit, EPSILON, t_nearest))
-            {
+            if (get_hit(&SPHERES[i], &last_ray, &last_hit, t_nearest)) {
                 hit_anything = true;
                 t_nearest = last_hit.t;
                 nearest_hit = last_hit;
