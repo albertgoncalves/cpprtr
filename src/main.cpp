@@ -87,14 +87,9 @@ struct Block {
 };
 
 struct Payload {
-    Pixel* buffer;
-    Block* blocks;
-    Vec3*  u;
-    Vec3*  v;
-    Vec3*  origin;
-    Vec3*  horizontal;
-    Vec3*  vertical;
-    Vec3*  bottom_left;
+    Pixel*  buffer;
+    Block*  blocks;
+    Camera* camera;
 };
 
 struct Memory {
@@ -340,12 +335,12 @@ static Vec3 random_in_unit_disk(PcgRng* rng) {
     }
 }
 
-static void set_color(Pixel* pixel, RgbColor* color) {
-    *color /= (f32)SAMPLES_PER_PIXEL;
-    clamp(color, 0.0f, 1.0f);
-    pixel->red = (u8)(RGB_COLOR_SCALE * sqrtf(color->red));
-    pixel->green = (u8)(RGB_COLOR_SCALE * sqrtf(color->green));
-    pixel->blue = (u8)(RGB_COLOR_SCALE * sqrtf(color->blue));
+static void set_color(Pixel* pixel, RgbColor color) {
+    color /= (f32)SAMPLES_PER_PIXEL;
+    clamp(&color, 0.0f, 1.0f);
+    pixel->red = (u8)(RGB_COLOR_SCALE * sqrtf(color.red));
+    pixel->green = (u8)(RGB_COLOR_SCALE * sqrtf(color.green));
+    pixel->blue = (u8)(RGB_COLOR_SCALE * sqrtf(color.blue));
 }
 
 static void render_block(Pixel*  pixels,
@@ -370,7 +365,7 @@ static void render_block(Pixel*  pixels,
                 };
                 color += get_color(&ray, rng, N_BOUNCES);
             }
-            set_color(&pixels[i + j_offset], &color);
+            set_color(&pixels[i + j_offset], color);
         }
     }
 }
@@ -378,15 +373,8 @@ static void render_block(Pixel*  pixels,
 static void* thread_render(void* args) {
     Payload* payload = (Payload*)args;
     Pixel*   buffer = payload->buffer;
-    Camera   camera = {
-        *payload->u,
-        *payload->v,
-        *payload->origin,
-        *payload->horizontal,
-        *payload->vertical,
-        *payload->bottom_left,
-    };
-    PcgRng rng = {};
+    Camera   camera = *payload->camera;
+    PcgRng   rng = {};
     init_random(&rng);
     for (;;) {
         u16 index = INDEX.fetch_add(1, std::memory_order_seq_cst);
@@ -398,27 +386,29 @@ static void* thread_render(void* args) {
 }
 
 static void set_pixels(Memory* memory) {
-    f32  theta = degrees_to_radians(VERTICAL_FOV);
-    f32  h = tanf(theta / 2.0f);
-    f32  viewport_height = 2.0f * h;
-    f32  viewport_width = ASPECT_RATIO * viewport_height;
-    Vec3 w = unit(LOOK_FROM - LOOK_AT);
-    Vec3 u = unit(cross(UP, w));
-    Vec3 v = cross(w, u);
-    Vec3 origin = LOOK_FROM;
-    Vec3 horizontal = FOCUS_DISTANCE * viewport_width * u;
-    Vec3 vertical = FOCUS_DISTANCE * viewport_height * v;
-    Vec3 bottom_left = origin - (horizontal / 2.0f) - (vertical / 2.0f) -
-                       (FOCUS_DISTANCE * w);
+    f32    theta = degrees_to_radians(VERTICAL_FOV);
+    f32    h = tanf(theta / 2.0f);
+    f32    viewport_height = 2.0f * h;
+    f32    viewport_width = ASPECT_RATIO * viewport_height;
+    Vec3   w = unit(LOOK_FROM - LOOK_AT);
+    Vec3   u = unit(cross(UP, w));
+    Vec3   v = cross(w, u);
+    Vec3   origin = LOOK_FROM;
+    Vec3   horizontal = FOCUS_DISTANCE * viewport_width * u;
+    Vec3   vertical = FOCUS_DISTANCE * viewport_height * v;
+    Camera camera = {
+        u,
+        v,
+        origin,
+        horizontal,
+        vertical,
+        origin - (horizontal / 2.0f) - (vertical / 2.0f) -
+            (FOCUS_DISTANCE * w),
+    };
     Payload payload = {
         memory->image.pixels,
         memory->blocks,
-        &u,
-        &v,
-        &origin,
-        &horizontal,
-        &vertical,
-        &bottom_left,
+        &camera,
     };
     u16 index = 0;
     for (u32 y = 0; y < Y_BLOCKS; ++y) {
