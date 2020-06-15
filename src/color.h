@@ -48,13 +48,7 @@ static RgbColor& operator/=(RgbColor& a, f32 b) {
 }
 
 static f32 clamp(f32 x, f32 min, f32 max) {
-    if (x < min) {
-        return min;
-    } else if (max < x) {
-        return max;
-    } else {
-        return x;
-    }
+    return x < min ? min : max < x ? max : x;
 }
 
 static void clamp(RgbColor* color, f32 min, f32 max) {
