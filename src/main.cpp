@@ -148,44 +148,44 @@ static Vec3 at(const Ray* ray, f32 t) {
     return ray->origin + (ray->direction * t);
 }
 
-static void set_hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t) {
-    hit->t = t;
-    Vec3 point = at(ray, t);
-    hit->point = point;
-    Vec3 outward_normal = (point - sphere->center) / sphere->radius;
-    bool front_face = dot(ray->direction, outward_normal) < 0;
-    hit->front_face = front_face;
-    hit->normal = front_face ? outward_normal : -outward_normal;
-    hit->material = sphere->material;
-    hit->albedo = sphere->albedo;
-    hit->features = sphere->features;
-}
+#define SET_HIT                                                      \
+    hit->t = t;                                                      \
+    Vec3 point = at(ray, t);                                         \
+    hit->point = point;                                              \
+    Vec3 outward_normal = (point - sphere->center) / sphere->radius; \
+    bool front_face = dot(ray->direction, outward_normal) < 0;       \
+    hit->front_face = front_face;                                    \
+    hit->normal = front_face ? outward_normal : -outward_normal;     \
+    hit->material = sphere->material;                                \
+    hit->albedo = sphere->albedo;                                    \
+    hit->features = sphere->features
 
 static bool get_hit(const Sphere* sphere,
                     const Ray*    ray,
                     Hit*          hit,
                     f32           t_max) {
-    Vec3 origin_center = ray->origin - sphere->center;
+    Vec3 offset = ray->origin - sphere->center;
     f32  a = dot(ray->direction, ray->direction);
-    f32  half_b = dot(origin_center, ray->direction);
-    f32  c =
-        dot(origin_center, origin_center) - (sphere->radius * sphere->radius);
-    f32 discriminant = (half_b * half_b) - (a * c);
+    f32  half_b = dot(offset, ray->direction);
+    f32  c = dot(offset, offset) - (sphere->radius * sphere->radius);
+    f32  discriminant = (half_b * half_b) - (a * c);
     if (0.0f < discriminant) {
         f32 root = sqrtf(discriminant);
         f32 t = (-half_b - root) / a;
         if ((EPSILON < t) && (t < t_max)) {
-            set_hit(sphere, ray, hit, t);
+            SET_HIT;
             return true;
         }
         t = (-half_b + root) / a;
         if ((EPSILON < t) && (t < t_max)) {
-            set_hit(sphere, ray, hit, t);
+            SET_HIT;
             return true;
         }
     }
     return false;
 }
+
+#undef SET_HIT
 
 static Vec3 get_random_vec3(PcgRng* rng) {
     return {
