@@ -6,8 +6,7 @@ now () {
     date +%s.%N
 }
 
-export TARGET_SANITIZE="$WD/bin/main_sanitize"
-export TARGET_VALGRIND="$WD/bin/main_valgrind"
+export TARGET="$WD/bin/main"
 export FLAGS=(
     "-fdelete-null-pointer-checks"
     "-fshort-enums"
@@ -48,33 +47,6 @@ export FLAGS=(
     "-Wunused-macros"
     "-Wwrite-strings"
 )
-export FLAGS_SANITIZE=(
-    "-fsanitize=address"
-    "-fsanitize-address-use-after-scope"
-    "-fsanitize=alignment"
-    "-fsanitize=bool"
-    "-fsanitize=bounds"
-    "-fsanitize=bounds-strict"
-    "-fsanitize=builtin"
-    "-fsanitize=enum"
-    "-fsanitize=float-cast-overflow"
-    "-fsanitize=float-divide-by-zero"
-    "-fsanitize=integer-divide-by-zero"
-    "-fsanitize=leak"
-    "-fsanitize=nonnull-attribute"
-    "-fsanitize=null"
-    "-fsanitize=object-size"
-    "-fsanitize=pointer-overflow"
-    "-fsanitize=returns-nonnull-attribute"
-    "-fsanitize=shift"
-    "-fsanitize=shift-base"
-    "-fsanitize=shift-exponent"
-    "-fsanitize=signed-integer-overflow"
-    "-fsanitize=undefined"
-    "-fsanitize-undefined-trap-on-error"
-    "-fsanitize=unreachable"
-    "-fsanitize=vla-bound"
-)
 export FILES=(
     main.cpp
 )
@@ -82,14 +54,7 @@ export FILES=(
 build_all () {
     cp "$WD/src"/* "$WD/build"
     cd "$WD/build" || exit 1
-    g++ -g -o "$TARGET_VALGRIND" "${FLAGS[@]}" -lm -pthread "${FILES[@]}"
-    g++ \
-        -o "$TARGET_SANITIZE" \
-        "${FLAGS[@]}" \
-        "${FLAGS_SANITIZE[@]}" \
-        -lm \
-        -pthread \
-        "${FILES[@]}"
+    g++ -static -g -o "$TARGET" "${FLAGS[@]}" "${FILES[@]}"
 }
 
 (
@@ -107,4 +72,4 @@ build_all () {
     python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
 )
 
-"$TARGET_SANITIZE"
+"$TARGET"

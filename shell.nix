@@ -1,5 +1,5 @@
 with import <nixpkgs> {};
-mkShell {
+pkgsMusl.mkShell {
     buildInputs = [
         clang_10
         cppcheck
