@@ -27,10 +27,10 @@ struct Pixel {
     u8 red;
 };
 
+#pragma pack(pop)
+
 #define BMP_HEADER_SIZE sizeof(BmpHeader) + sizeof(DibHeader)
 #define BMP_FILE_SIZE   BMP_HEADER_SIZE + sizeof(Pixel[N_PIXELS])
-
-#pragma pack(pop)
 
 struct BmpImage {
     Pixel     pixels[N_PIXELS];
