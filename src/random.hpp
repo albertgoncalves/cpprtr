@@ -1,7 +1,7 @@
 #ifndef __RANDOM_H__
 #define __RANDOM_H__
 
-#include "types.h"
+#include "types.hpp"
 
 #define PCG_CONSTANT 0x853c49e6748fea9bull
 

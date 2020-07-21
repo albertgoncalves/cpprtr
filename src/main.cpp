@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "types.h"
+#include "types.hpp"
 
 #define IMAGE_WIDTH  768u
 #define IMAGE_HEIGHT 512u
@@ -28,10 +28,10 @@
 
 #define FILEPATH "out/main.bmp"
 
-#include "bmp.h"
-#include "color.h"
-#include "math.h"
-#include "random.h"
+#include "bmp.hpp"
+#include "color.hpp"
+#include "math.hpp"
+#include "random.hpp"
 
 enum Material {
     LAMBERTIAN,

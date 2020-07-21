@@ -1,7 +1,7 @@
 #ifndef __COLOR_H__
 #define __COLOR_H__
 
-#include "types.h"
+#include "types.hpp"
 
 #define RGB_COLOR_SCALE 255.0f
 

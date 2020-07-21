@@ -7,6 +7,6 @@
 !.clang-format
 !src/
 !*.cpp
-!*.h
+!*.hpp
 !main
 !profile

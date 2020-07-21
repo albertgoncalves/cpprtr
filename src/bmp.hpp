@@ -1,7 +1,7 @@
 #ifndef __BMP_H__
 #define __BMP_H__
 
-#include "types.h"
+#include "types.hpp"
 
 #pragma pack(push, 1)
 
