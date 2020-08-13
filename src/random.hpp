@@ -3,7 +3,7 @@
 
 #include "types.hpp"
 
-#define PCG_CONSTANT 0x853c49e6748fea9bull
+#define PCG_CONSTANT 9600629759793949339ull
 
 struct PcgRng {
     u64 state;

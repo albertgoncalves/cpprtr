@@ -118,14 +118,10 @@ static const Vec3 UP = {
     0.0f,
 };
 
-static const f32 VERTICAL_FOV = 90.0f;
-
+#define VERTICAL_FOV 90.0f
+#define APERTURE     0.175f
 static const f32 ASPECT_RATIO = FLOAT_WIDTH / FLOAT_HEIGHT;
-
-static const f32 APERTURE = 0.175f;
-
 static const f32 LENS_RADIUS = APERTURE / 2.0f;
-
 static const f32 FOCUS_DISTANCE = len(LOOK_FROM - LOOK_AT);
 
 #define N_SPHERES 11u
