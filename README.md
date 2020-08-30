@@ -6,7 +6,7 @@ Finally got through [Ray Tracing in One Weekend](https://raytracing.github.io/bo
 
 Needed things
 ---
-*   [Nix](https://nixos.org/nix/)
+*   [Nix](https://nixos.org/download.html)
 
 Quick start
 ---
