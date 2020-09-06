@@ -8,9 +8,6 @@ for x in bin build out; do
     fi
 done
 
-alias clang-format="clang-format -verbose -i"
-alias cppcheck="cppcheck --enable=all --suppress=missingIncludeSystem"
-
 open () {
     xdg-open "$1" > /dev/null 2>&1
 }
