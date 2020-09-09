@@ -24,10 +24,10 @@ static void init_random(PcgRng* rng) {
 
 static u32 get_random_u32(PcgRng* rng) {
     u64 state = rng->state;
-    rng->state = (state * 6364136223846793005ull) + (rng->increment | 1);
+    rng->state = (state * 6364136223846793005ull) + (rng->increment | 1u);
     u32 xor_shift = (u32)(((state >> 18u) ^ state) >> 27u);
     u32 rotate = (u32)(state >> 59u);
-    return (xor_shift >> rotate) | (xor_shift << ((-rotate) & 31));
+    return (xor_shift >> rotate) | (xor_shift << ((-rotate) & 31u));
 }
 
 static u32 get_random_u32_below(PcgRng* rng, u32 bound) {

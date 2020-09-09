@@ -255,12 +255,12 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
         1.0f,
         1.0f,
     };
-    for (u8 _ = 0; _ < N_BOUNCES; ++_) {
+    for (u8 _ = 0u; _ < N_BOUNCES; ++_) {
         Hit  last_hit = {};
         Hit  nearest_hit = {};
         bool hit_anything = false;
         f32  t_nearest = F32_MAX;
-        for (u8 i = 0; i < N_SPHERES; ++i) {
+        for (u8 i = 0u; i < N_SPHERES; ++i) {
             if (get_hit(&SPHERES[i], &last_ray, &last_hit, t_nearest)) {
                 hit_anything = true;
                 t_nearest = last_hit.t;
@@ -358,7 +358,7 @@ static void render_block(Pixel*  pixels,
         u32 j_offset = j * IMAGE_WIDTH;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
             RgbColor color = {};
-            for (u8 _ = 0; _ < SAMPLES_PER_PIXEL; ++_) {
+            for (u8 _ = 0u; _ < SAMPLES_PER_PIXEL; ++_) {
                 f32  x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
                 f32  y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
                 Vec3 lens_point = LENS_RADIUS * random_in_unit_disk(rng);
@@ -417,9 +417,9 @@ static void set_pixels(Memory* memory) {
         memory->blocks,
         &camera,
     };
-    u16 index = 0;
-    for (u32 y = 0; y < Y_BLOCKS; ++y) {
-        for (u32 x = 0; x < X_BLOCKS; ++x) {
+    u16 index = 0u;
+    for (u32 y = 0u; y < Y_BLOCKS; ++y) {
+        for (u32 x = 0u; x < X_BLOCKS; ++x) {
             Point start = {
                 x * BLOCK_WIDTH,
                 y * BLOCK_HEIGHT,
@@ -437,10 +437,10 @@ static void set_pixels(Memory* memory) {
             memory->blocks[index++] = block;
         }
     }
-    for (u8 i = 0; i < N_THREADS; ++i) {
+    for (u8 i = 0u; i < N_THREADS; ++i) {
         pthread_create(&memory->threads[i], NULL, thread_render, &payload);
     }
-    for (u8 i = 0; i < N_THREADS; ++i) {
+    for (u8 i = 0u; i < N_THREADS; ++i) {
         pthread_join(memory->threads[i], NULL);
     }
 }
@@ -475,7 +475,7 @@ int main() {
     if (file == NULL) {
         return EXIT_FAILURE;
     }
-    Memory* memory = (Memory*)calloc(1, sizeof(Memory));
+    Memory* memory = (Memory*)calloc(1u, sizeof(Memory));
     if (memory == NULL) {
         return EXIT_FAILURE;
     }
