@@ -154,21 +154,18 @@ static const Sphere SPHERES[N_SPHERES] = {
     {{-1.25f, 0.0f, -1.75f}, {}, -0.4f, 1.5f, DIELECTRIC},
 };
 
-static Vec3 at(const Ray* ray, f32 t) {
-    return ray->origin + (ray->direction * t);
+static void set_hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t) {
+    hit->t = t;
+    Vec3 point = ray->origin + (ray->direction * t);
+    hit->point = point;
+    Vec3 outward_normal = (point - sphere->center) / sphere->radius;
+    bool front_face = dot(ray->direction, outward_normal) < 0;
+    hit->front_face = front_face;
+    hit->normal = front_face ? outward_normal : -outward_normal;
+    hit->material = sphere->material;
+    hit->albedo = sphere->albedo;
+    hit->features = sphere->features;
 }
-
-#define SET_HIT                                                      \
-    hit->t = t;                                                      \
-    Vec3 point = at(ray, t);                                         \
-    hit->point = point;                                              \
-    Vec3 outward_normal = (point - sphere->center) / sphere->radius; \
-    bool front_face = dot(ray->direction, outward_normal) < 0;       \
-    hit->front_face = front_face;                                    \
-    hit->normal = front_face ? outward_normal : -outward_normal;     \
-    hit->material = sphere->material;                                \
-    hit->albedo = sphere->albedo;                                    \
-    hit->features = sphere->features
 
 static bool get_hit(const Sphere* sphere,
                     const Ray*    ray,
@@ -183,19 +180,17 @@ static bool get_hit(const Sphere* sphere,
         f32 root = sqrtf(discriminant);
         f32 t = (-half_b - root) / a;
         if ((EPSILON < t) && (t < t_max)) {
-            SET_HIT;
+            set_hit(sphere, ray, hit, t);
             return true;
         }
         t = (-half_b + root) / a;
         if ((EPSILON < t) && (t < t_max)) {
-            SET_HIT;
+            set_hit(sphere, ray, hit, t);
             return true;
         }
     }
     return false;
 }
-
-#undef SET_HIT
 
 static Vec3 get_random_vec3(PcgRng* rng) {
     return {
@@ -342,18 +337,10 @@ static Vec3 random_in_unit_disk(PcgRng* rng) {
     }
 }
 
-static void set_color(Pixel* pixel, RgbColor color) {
-    color /= (f32)SAMPLES_PER_PIXEL;
-    clamp(&color, 0.0f, 1.0f);
-    pixel->red = (u8)(RGB_COLOR_SCALE * sqrtf(color.red));
-    pixel->green = (u8)(RGB_COLOR_SCALE * sqrtf(color.green));
-    pixel->blue = (u8)(RGB_COLOR_SCALE * sqrtf(color.blue));
-}
-
-static void render_block(Pixel*  pixels,
-                         Camera  camera,
-                         Block   block,
-                         PcgRng* rng) {
+static void render_block(const Camera* camera,
+                         Pixel*        pixels,
+                         Block         block,
+                         PcgRng*       rng) {
     for (u32 j = block.start.y; j < block.end.y; ++j) {
         u32 j_offset = j * IMAGE_WIDTH;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
@@ -363,32 +350,38 @@ static void render_block(Pixel*  pixels,
                 f32  y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
                 Vec3 lens_point = LENS_RADIUS * random_in_unit_disk(rng);
                 Vec3 lens_offset =
-                    (camera.u * lens_point.x) + (camera.v * lens_point.y);
+                    (camera->u * lens_point.x) + (camera->v * lens_point.y);
                 Ray ray = {
-                    camera.origin + lens_offset,
-                    (camera.bottom_left + (x * camera.horizontal) +
-                     (y * camera.vertical)) -
-                        camera.origin - lens_offset,
+                    camera->origin + lens_offset,
+                    (camera->bottom_left + (x * camera->horizontal) +
+                     (y * camera->vertical)) -
+                        camera->origin - lens_offset,
                 };
                 color += get_color(&ray, rng);
             }
-            set_color(&pixels[i + j_offset], color);
+            color /= (f32)SAMPLES_PER_PIXEL;
+            clamp(&color, 0.0f, 1.0f);
+            pixels[i + j_offset] = {
+                (u8)(RGB_COLOR_SCALE * sqrtf(color.blue)),
+                (u8)(RGB_COLOR_SCALE * sqrtf(color.green)),
+                (u8)(RGB_COLOR_SCALE * sqrtf(color.red)),
+            };
         }
     }
 }
 
-static void* thread_render(void* args) {
-    Payload* payload = (Payload*)args;
-    Pixel*   buffer = payload->buffer;
-    Camera   camera = *payload->camera;
-    PcgRng   rng = {};
+static void* thread_render(void* payload) {
+    Pixel*  buffer = ((Payload*)payload)->buffer;
+    Camera* camera = ((Payload*)payload)->camera;
+    Block*  blocks = ((Payload*)payload)->blocks;
+    PcgRng  rng = {};
     init_random(&rng);
     for (;;) {
         u16 index = INDEX.fetch_add(1u, SEQ_CST);
         if (N_BLOCKS <= index) {
             return NULL;
         }
-        render_block(buffer, camera, payload->blocks[index], &rng);
+        render_block(camera, buffer, blocks[index], &rng);
     }
 }
 
