@@ -416,7 +416,8 @@ static void set_pixels(Memory* memory) {
 }
 
 int main() {
-    printf("sizeof(Vec3)     : %zu\n"
+    printf("sizeof(void*)    : %zu\n"
+           "sizeof(Vec3)     : %zu\n"
            "sizeof(RgbColor) : %zu\n"
            "sizeof(Material) : %zu\n"
            "sizeof(Features) : %zu\n"
@@ -429,6 +430,7 @@ int main() {
            "sizeof(Payload)  : %zu\n"
            "sizeof(Memory)   : %zu\n"
            "\n",
+           sizeof(void*),
            sizeof(Vec3),
            sizeof(RgbColor),
            sizeof(Material),
@@ -441,7 +443,7 @@ int main() {
            sizeof(Block),
            sizeof(Payload),
            sizeof(Memory));
-    FileHandle* file = fopen(FILEPATH, "wb");
+    File* file = fopen(FILEPATH, "wb");
     if (file == NULL) {
         return EXIT_FAILURE;
     }
