@@ -2,14 +2,36 @@
 #include <float.h>
 #include <math.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "types.hpp"
+typedef uint8_t  u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef int16_t  i16;
+typedef int32_t  i32;
+typedef float    f32;
 
 #define IMAGE_WIDTH  768u
 #define IMAGE_HEIGHT 512u
 #define N_PIXELS     393216u
+
+#define FILEPATH "out/main.bmp"
+
+#include "bmp.hpp"
+#include "color.hpp"
+#include "math.hpp"
+#include "random.hpp"
+
+#define F32_MAX FLT_MAX
+
+typedef pthread_t            Thread;
+typedef std::atomic_uint16_t u16Atomic;
+
+#define SEQ_CST   std::memory_order_seq_cst
+#define N_THREADS 3u
 
 #define FLOAT_WIDTH  768.0f
 #define FLOAT_HEIGHT 512.0f
@@ -23,15 +45,6 @@
 #define X_BLOCKS     6u
 #define Y_BLOCKS     4u
 #define N_BLOCKS     24u
-
-#define N_THREADS 3u
-
-#define FILEPATH "out/main.bmp"
-
-#include "bmp.hpp"
-#include "color.hpp"
-#include "math.hpp"
-#include "random.hpp"
 
 enum Material {
     LAMBERTIAN,
@@ -100,6 +113,11 @@ struct Memory {
 
 static u16Atomic INDEX;
 
+#define VERTICAL_FOV 90.0f
+#define APERTURE     0.175f
+static const f32 ASPECT_RATIO = FLOAT_WIDTH / FLOAT_HEIGHT;
+static const f32 LENS_RADIUS = APERTURE / 2.0f;
+
 static const Vec3 LOOK_FROM = {
     -0.5f,
     0.75f,
@@ -118,10 +136,6 @@ static const Vec3 UP = {
     0.0f,
 };
 
-#define VERTICAL_FOV 90.0f
-#define APERTURE     0.175f
-static const f32 ASPECT_RATIO = FLOAT_WIDTH / FLOAT_HEIGHT;
-static const f32 LENS_RADIUS = APERTURE / 2.0f;
 static const f32 FOCUS_DISTANCE = len(LOOK_FROM - LOOK_AT);
 
 #define N_SPHERES 11u
@@ -370,7 +384,7 @@ static void* thread_render(void* args) {
     PcgRng   rng = {};
     init_random(&rng);
     for (;;) {
-        u16 index = INDEX.fetch_add(1, std::memory_order_seq_cst);
+        u16 index = INDEX.fetch_add(1u, SEQ_CST);
         if (N_BLOCKS <= index) {
             return NULL;
         }

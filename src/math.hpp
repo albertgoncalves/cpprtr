@@ -1,8 +1,6 @@
 #ifndef __MATH_H__
 #define __MATH_H__
 
-#include "types.hpp"
-
 #define PI 3.1415926535897932385f
 
 static f32 degrees_to_radians(f32 degrees) {

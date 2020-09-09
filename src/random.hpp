@@ -1,8 +1,9 @@
 #ifndef __RANDOM_H__
 #define __RANDOM_H__
 
-#include "types.hpp"
+typedef struct timeval TimeValue;
 
+#define U32_MAX      0xFFFFFFFFu
 #define PCG_CONSTANT 9600629759793949339ull
 
 struct PcgRng {
