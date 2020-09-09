@@ -89,4 +89,27 @@ static Vec3 cross(Vec3 a, Vec3 b) {
     };
 }
 
+static Vec3 reflect(Vec3 v, Vec3 n) {
+    return v - (2.0f * dot(v, n) * n);
+}
+
+static Vec3 refract(Vec3 uv, Vec3 n, f32 etai_over_etat) {
+    f32  cos_theta = dot(-uv, n);
+    Vec3 parallel = etai_over_etat * (uv + (cos_theta * n));
+    f32  length_squared = dot(parallel, parallel);
+    Vec3 perpendicular;
+    if (1.0f <= length_squared) {
+        perpendicular = {};
+    } else {
+        perpendicular = (-sqrtf(1.0f - length_squared)) * n;
+    }
+    return parallel + perpendicular;
+}
+
+static f32 schlick(f32 cosine, f32 refreactive_index) {
+    f32 r0 = (1.0f - refreactive_index) / (1.0f + refreactive_index);
+    r0 *= r0;
+    return r0 + ((1.0f - r0) * powf(1.0f - cosine, 5.0f));
+}
+
 #endif
