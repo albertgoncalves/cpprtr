@@ -54,7 +54,7 @@ export FILES=(
 
 build_all () {
     cp "$WD/src"/* "$WD/build"
-    cd "$WD/build" || exit 1
+    cd "$WD/build"
     g++ -static -g -o "$TARGET" "${FLAGS[@]}" "${FILES[@]}"
 }
 
