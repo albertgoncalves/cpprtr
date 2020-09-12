@@ -33,6 +33,8 @@ typedef std::atomic_uint16_t u16Atomic;
 #define SEQ_CST   std::memory_order_seq_cst
 #define N_THREADS 3u
 
+typedef struct timeval TimeValue;
+
 #define FLOAT_WIDTH  768.0f
 #define FLOAT_HEIGHT 512.0f
 
@@ -111,7 +113,8 @@ struct Memory {
     Block    blocks[N_BLOCKS];
 };
 
-static u16Atomic INDEX;
+static u16Atomic BLOCK_INDEX;
+static u16Atomic RNG_INCREMENT;
 
 #define VERTICAL_FOV 90.0f
 #define APERTURE     0.175f
@@ -347,14 +350,20 @@ static void render_block(const Camera* camera,
     }
 }
 
+static u64 get_microseconds() {
+    TimeValue time;
+    gettimeofday(&time, NULL);
+    return (u64)time.tv_usec;
+}
+
 static void* thread_render(void* payload) {
     Pixel*  buffer = ((Payload*)payload)->buffer;
     Camera* camera = ((Payload*)payload)->camera;
     Block*  blocks = ((Payload*)payload)->blocks;
     PcgRng  rng = {};
-    init_random(&rng);
+    set_seed(&rng, get_microseconds(), RNG_INCREMENT.fetch_add(1u, SEQ_CST));
     for (;;) {
-        u16 index = INDEX.fetch_add(1u, SEQ_CST);
+        u16 index = BLOCK_INDEX.fetch_add(1u, SEQ_CST);
         if (N_BLOCKS <= index) {
             return NULL;
         }

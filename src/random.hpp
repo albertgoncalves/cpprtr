@@ -1,26 +1,10 @@
 #ifndef __RANDOM_H__
 #define __RANDOM_H__
 
-typedef struct timeval TimeValue;
-
-#define U32_MAX      0xFFFFFFFFu
-#define PCG_CONSTANT 9600629759793949339ull
-
 struct PcgRng {
     u64 state;
     u64 increment;
 };
-
-static u32 get_microseconds() {
-    TimeValue time;
-    gettimeofday(&time, NULL);
-    return (u32)time.tv_usec;
-}
-
-static void init_random(PcgRng* rng) {
-    rng->state = PCG_CONSTANT * get_microseconds();
-    rng->increment = PCG_CONSTANT * get_microseconds();
-}
 
 static u32 get_random_u32(PcgRng* rng) {
     u64 state = rng->state;
@@ -30,18 +14,16 @@ static u32 get_random_u32(PcgRng* rng) {
     return (xor_shift >> rotate) | (xor_shift << ((-rotate) & 31u));
 }
 
-static u32 get_random_u32_below(PcgRng* rng, u32 bound) {
-    u32 threshold = (-bound) % bound;
-    for (;;) {
-        u32 value = get_random_u32(rng);
-        if (threshold <= value) {
-            return value % bound;
-        }
-    }
+static void set_seed(PcgRng* rng, u64 state, u64 increment) {
+    rng->state = 0u;
+    rng->increment = (increment << 1u) | 1u;
+    get_random_u32(rng);
+    rng->state += state;
+    get_random_u32(rng);
 }
 
 static f32 get_random_f32(PcgRng* rng) {
-    return (f32)get_random_u32_below(rng, U32_MAX) / (f32)U32_MAX;
+    return ldexpf((f32)get_random_u32(rng), -32);
 }
 
 #endif

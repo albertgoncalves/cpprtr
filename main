@@ -65,7 +65,6 @@ build_all () {
         --enable=all \
         --suppress=cstyleCast \
         --suppress=missingIncludeSystem \
-        --suppress=oppositeExpression \
         --suppress=resourceLeak \
         "$WD/src"
     build_all
