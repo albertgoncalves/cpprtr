@@ -1,8 +1,6 @@
 #ifndef __BMP_H__
 #define __BMP_H__
 
-typedef FILE File;
-
 #pragma pack(push, 1u)
 
 struct BmpHeader {
