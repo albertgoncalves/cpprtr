@@ -19,6 +19,8 @@
 #define Y_BLOCKS     4u
 #define N_BLOCKS     24u
 
+#define RGB_COLOR_SCALE 255.0f
+
 enum Material {
     LAMBERTIAN,
     METAL,
