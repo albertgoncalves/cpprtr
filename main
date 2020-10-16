@@ -10,6 +10,7 @@ export TARGET="$WD/bin/main"
 export FLAGS=(
     "-fno-exceptions"
     "-fno-rtti"
+    "-fno-unwind-tables"
     "-fshort-enums"
     "-fsingle-precision-constant"
     "-march=native"
