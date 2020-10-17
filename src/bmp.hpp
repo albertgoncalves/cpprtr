@@ -1,7 +1,7 @@
 #ifndef __BMP_H__
 #define __BMP_H__
 
-#pragma pack(push, 1u)
+#pragma pack(push, 2u)
 
 struct BmpHeader {
     u16 id;
