@@ -2,10 +2,6 @@
 
 set -euo pipefail
 
-now () {
-    date +%s.%N
-}
-
 export TARGET="$WD/bin/main"
 export FLAGS=(
     "-fno-exceptions"
@@ -53,25 +49,24 @@ export FILES=(
     main.cpp
 )
 
-build_all () {
+now () {
+    date +%s.%N
+}
+
+clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
+cppcheck \
+    --enable=all \
+    --suppress=cstyleCast \
+    --suppress=missingIncludeSystem \
+    --suppress=resourceLeak \
+    "$WD/src" \
+    | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
+(
+    start=$(now)
     cp "$WD/src"/* "$WD/build"
     cd "$WD/build"
     g++ -static -g -o "$TARGET" "${FLAGS[@]}" "${FILES[@]}"
-}
-
-(
-    start=$(now)
-    clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
-    cppcheck \
-        --enable=all \
-        --suppress=cstyleCast \
-        --suppress=missingIncludeSystem \
-        --suppress=resourceLeak \
-        "$WD/src" \
-        | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
-    build_all
     end=$(now)
     python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
 )
-
 "$TARGET"
