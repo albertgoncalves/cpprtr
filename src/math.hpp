@@ -94,10 +94,10 @@ static Vec3 reflect(Vec3 v, Vec3 n) {
 }
 
 static Vec3 refract(Vec3 uv, Vec3 n, f32 etai_over_etat) {
-    f32  cos_theta = dot(-uv, n);
-    Vec3 parallel = etai_over_etat * (uv + (cos_theta * n));
-    f32  length_squared = dot(parallel, parallel);
-    Vec3 perpendicular;
+    const f32  cos_theta = dot(-uv, n);
+    const Vec3 parallel = etai_over_etat * (uv + (cos_theta * n));
+    const f32  length_squared = dot(parallel, parallel);
+    Vec3       perpendicular;
     if (1.0f <= length_squared) {
         perpendicular = {};
     } else {

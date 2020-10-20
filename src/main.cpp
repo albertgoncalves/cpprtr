@@ -73,9 +73,9 @@ struct Block {
 };
 
 struct Payload {
-    Pixel*  buffer;
-    Block*  blocks;
-    Camera* camera;
+    Pixel*        buffer;
+    const Block*  blocks;
+    const Camera* camera;
 };
 
 struct Memory {
@@ -130,10 +130,10 @@ static const Sphere SPHERES[N_SPHERES] = {
 
 static void set_hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t) {
     hit->t = t;
-    Vec3 point = ray->origin + (ray->direction * t);
+    const Vec3 point = ray->origin + (ray->direction * t);
     hit->point = point;
-    Vec3 outward_normal = (point - sphere->center) / sphere->radius;
-    bool front_face = dot(ray->direction, outward_normal) < 0;
+    const Vec3 outward_normal = (point - sphere->center) / sphere->radius;
+    const bool front_face = dot(ray->direction, outward_normal) < 0;
     hit->front_face = front_face;
     hit->normal = front_face ? outward_normal : -outward_normal;
     hit->material = sphere->material;
@@ -145,14 +145,14 @@ static bool get_hit(const Sphere* sphere,
                     const Ray*    ray,
                     Hit*          hit,
                     f32           t_max) {
-    Vec3 offset = ray->origin - sphere->center;
-    f32  a = dot(ray->direction, ray->direction);
-    f32  half_b = dot(offset, ray->direction);
-    f32  c = dot(offset, offset) - (sphere->radius * sphere->radius);
-    f32  discriminant = (half_b * half_b) - (a * c);
+    const Vec3 offset = ray->origin - sphere->center;
+    const f32  a = dot(ray->direction, ray->direction);
+    const f32  half_b = dot(offset, ray->direction);
+    const f32  c = dot(offset, offset) - (sphere->radius * sphere->radius);
+    const f32  discriminant = (half_b * half_b) - (a * c);
     if (0.0f < discriminant) {
-        f32 root = sqrtf(discriminant);
-        f32 t = (-half_b - root) / a;
+        const f32 root = sqrtf(discriminant);
+        f32       t = (-half_b - root) / a;
         if ((EPSILON < t) && (t < t_max)) {
             set_hit(sphere, ray, hit, t);
             return true;
@@ -176,7 +176,7 @@ static Vec3 get_random_vec3(PcgRng* rng) {
 
 static Vec3 get_random_in_unit_sphere(PcgRng* rng) {
     for (;;) {
-        Vec3 point = (get_random_vec3(rng) * 2.0f) - 1.0f;
+        const Vec3 point = (get_random_vec3(rng) * 2.0f) - 1.0f;
         if (dot(point, point) < 1.0f) {
             return point;
         }
@@ -184,9 +184,9 @@ static Vec3 get_random_in_unit_sphere(PcgRng* rng) {
 }
 
 static Vec3 get_random_unit_vector(PcgRng* rng) {
-    f32 a = get_random_f32(rng) * 2.0f * PI;
-    f32 z = (get_random_f32(rng) * 2.0f) - 1.0f;
-    f32 r = sqrtf(1.0f - (z * z));
+    const f32 a = get_random_f32(rng) * 2.0f * PI;
+    const f32 z = (get_random_f32(rng) * 2.0f) - 1.0f;
+    const f32 r = sqrtf(1.0f - (z * z));
     return {
         r * cosf(a),
         r * sinf(a),
@@ -237,14 +237,14 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
                 break;
             }
             case DIELECTRIC: {
-                f32 etai_over_etat =
+                const f32 etai_over_etat =
                     nearest_hit.front_face
                         ? 1.0f / nearest_hit.features.refractive_index
                         : nearest_hit.features.refractive_index;
-                Vec3 direction = unit(last_ray.direction);
-                f32  cos_theta =
+                const Vec3 direction = unit(last_ray.direction);
+                const f32  cos_theta =
                     fminf(dot(-direction, nearest_hit.normal), 1.0f);
-                f32 sin_theta = sqrtf(1.0f - (cos_theta * cos_theta));
+                const f32 sin_theta = sqrtf(1.0f - (cos_theta * cos_theta));
                 if ((1.0f < (etai_over_etat * sin_theta)) ||
                     (get_random_f32(rng) < schlick(cos_theta, etai_over_etat)))
                 {
@@ -262,8 +262,8 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
             }
             }
         } else {
-            f32      t = 0.5f * (unit(last_ray.direction).y + 1.0f);
-            RgbColor color = {
+            const f32 t = 0.5f * (unit(last_ray.direction).y + 1.0f);
+            RgbColor  color = {
                 t * 0.5f,
                 t * 0.7f,
                 t,
@@ -277,7 +277,7 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
 
 static Vec3 random_in_unit_disk(PcgRng* rng) {
     for (;;) {
-        Vec3 point = {
+        const Vec3 point = {
             (get_random_f32(rng) * 2.0f) - 1.0f,
             (get_random_f32(rng) * 2.0f) - 1.0f,
             0.0f,
@@ -293,16 +293,16 @@ static void render_block(const Camera* camera,
                          Block         block,
                          PcgRng*       rng) {
     for (u32 j = block.start.y; j < block.end.y; ++j) {
-        u32 j_offset = j * IMAGE_WIDTH;
+        const u32 j_offset = j * IMAGE_WIDTH;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
             RgbColor color = {};
             for (u8 _ = 0u; _ < SAMPLES_PER_PIXEL; ++_) {
-                f32  x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
-                f32  y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
-                Vec3 lens_point = LENS_RADIUS * random_in_unit_disk(rng);
-                Vec3 lens_offset =
+                const f32  x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
+                const f32  y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
+                const Vec3 lens_point = LENS_RADIUS * random_in_unit_disk(rng);
+                const Vec3 lens_offset =
                     (camera->u * lens_point.x) + (camera->v * lens_point.y);
-                Ray ray = {
+                const Ray ray = {
                     camera->origin + lens_offset,
                     (camera->bottom_left + (x * camera->horizontal) +
                      (y * camera->vertical)) -
@@ -328,13 +328,13 @@ static u64 get_microseconds() {
 }
 
 static void* thread_render(void* payload) {
-    Pixel*  buffer = ((Payload*)payload)->buffer;
-    Camera* camera = ((Payload*)payload)->camera;
-    Block*  blocks = ((Payload*)payload)->blocks;
-    PcgRng  rng = {};
+    Pixel*        buffer = ((Payload*)payload)->buffer;
+    const Block*  blocks = ((Payload*)payload)->blocks;
+    const Camera* camera = ((Payload*)payload)->camera;
+    PcgRng        rng = {};
     set_seed(&rng, get_microseconds(), RNG_INCREMENT.fetch_add(1u, SEQ_CST));
     for (;;) {
-        u16 index = BLOCK_INDEX.fetch_add(1u, SEQ_CST);
+        const u16 index = BLOCK_INDEX.fetch_add(1u, SEQ_CST);
         if (N_BLOCKS <= index) {
             return NULL;
         }
@@ -343,17 +343,17 @@ static void* thread_render(void* payload) {
 }
 
 static void set_pixels(Memory* memory) {
-    f32    theta = degrees_to_radians(VERTICAL_FOV);
-    f32    h = tanf(theta / 2.0f);
-    f32    viewport_height = 2.0f * h;
-    f32    viewport_width = ASPECT_RATIO * viewport_height;
-    Vec3   w = unit(LOOK_FROM - LOOK_AT);
-    Vec3   u = unit(cross(UP, w));
-    Vec3   v = cross(w, u);
-    Vec3   origin = LOOK_FROM;
-    Vec3   horizontal = FOCUS_DISTANCE * viewport_width * u;
-    Vec3   vertical = FOCUS_DISTANCE * viewport_height * v;
-    Camera camera = {
+    const f32    theta = degrees_to_radians(VERTICAL_FOV);
+    const f32    h = tanf(theta / 2.0f);
+    const f32    viewport_height = 2.0f * h;
+    const f32    viewport_width = ASPECT_RATIO * viewport_height;
+    const Vec3   w = unit(LOOK_FROM - LOOK_AT);
+    const Vec3   u = unit(cross(UP, w));
+    const Vec3   v = cross(w, u);
+    const Vec3   origin = LOOK_FROM;
+    const Vec3   horizontal = FOCUS_DISTANCE * viewport_width * u;
+    const Vec3   vertical = FOCUS_DISTANCE * viewport_height * v;
+    const Camera camera = {
         u,
         v,
         origin,
@@ -370,7 +370,7 @@ static void set_pixels(Memory* memory) {
     u16 index = 0u;
     for (u32 y = 0u; y < Y_BLOCKS; ++y) {
         for (u32 x = 0u; x < X_BLOCKS; ++x) {
-            Point start = {
+            const Point start = {
                 x * BLOCK_WIDTH,
                 y * BLOCK_HEIGHT,
             };
@@ -380,7 +380,7 @@ static void set_pixels(Memory* memory) {
             };
             end.x = end.x < IMAGE_WIDTH ? end.x : IMAGE_WIDTH;
             end.y = end.y < IMAGE_HEIGHT ? end.y : IMAGE_HEIGHT;
-            Block block = {
+            const Block block = {
                 start,
                 end,
             };
