@@ -69,4 +69,4 @@ cppcheck \
     end=$(now)
     python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
 )
-"$TARGET"
+"$TARGET" "$WD/out/main.bmp"

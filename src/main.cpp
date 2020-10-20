@@ -5,8 +5,6 @@
 #include "math.hpp"
 #include "random.hpp"
 
-#define FILEPATH "out/main.bmp"
-
 #define N_THREADS 3u
 
 #define N_BOUNCES         32u
@@ -397,7 +395,7 @@ static void set_pixels(Memory* memory) {
     }
 }
 
-int main() {
+i32 main(i32 n, const char** args) {
     printf("sizeof(void*)    : %zu\n"
            "sizeof(Vec3)     : %zu\n"
            "sizeof(RgbColor) : %zu\n"
@@ -425,7 +423,10 @@ int main() {
            sizeof(Block),
            sizeof(Payload),
            sizeof(Memory));
-    File* file = fopen(FILEPATH, "wb");
+    if (n < 2) {
+        return EXIT_FAILURE;
+    }
+    File* file = fopen(args[1], "wb");
     if (file == NULL) {
         return EXIT_FAILURE;
     }
