@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-export TARGET="$WD/bin/main"
-export FLAGS=(
+target="$WD/bin/main"
+flags=(
     "-fno-exceptions"
     "-fno-rtti"
     "-fno-unwind-tables"
@@ -45,7 +45,7 @@ export FLAGS=(
     "-Wunused-macros"
     "-Wwrite-strings"
 )
-export FILES=(
+files=(
     main.cpp
 )
 
@@ -65,8 +65,8 @@ cppcheck \
     start=$(now)
     cp "$WD/src"/* "$WD/build"
     cd "$WD/build"
-    g++ -static -g -o "$TARGET" "${FLAGS[@]}" "${FILES[@]}"
+    g++ -static -g -o "$target" "${flags[@]}" "${files[@]}"
     end=$(now)
     python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
 )
-"$TARGET" "$WD/out/main.bmp"
+"$target" "$WD/out/main.bmp"
