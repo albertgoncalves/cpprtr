@@ -54,6 +54,9 @@ now () {
 }
 
 clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
+for x in "$WD"/src/*.hpp; do
+    cppcheck "$x" | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
+done
 cppcheck \
     --enable=all \
     --suppress=cstyleCast \
