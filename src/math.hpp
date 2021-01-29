@@ -109,7 +109,8 @@ static Vec3 refract(Vec3 uv, Vec3 n, f32 etai_over_etat) {
 static f32 schlick(f32 cosine, f32 refreactive_index) {
     f32 r0 = (1.0f - refreactive_index) / (1.0f + refreactive_index);
     r0 *= r0;
-    return r0 + ((1.0f - r0) * powf(1.0f - cosine, 5.0f));
+    f32 c = 1.0f - cosine;
+    return r0 + ((1.0f - r0) * c * c * c * c * c);
 }
 
 #endif
