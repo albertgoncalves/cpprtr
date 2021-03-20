@@ -54,10 +54,6 @@ now () {
     date +%s.%N
 }
 
-clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
-for x in "$WD"/src/*.hpp; do
-    cppcheck "$x" | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
-done
 cppcheck \
     --enable=all \
     --suppress=cstyleCast \
@@ -65,6 +61,7 @@ cppcheck \
     --suppress=resourceLeak \
     "$WD/src" \
     | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
+clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
 (
     start=$(now)
     cp "$WD/src"/* "$WD/build"
