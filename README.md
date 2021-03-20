@@ -12,6 +12,6 @@ Quick start
 ---
 ```
 $ nix-shell
-[nix-shell:path/to/cpprtr]$ ./main && open out/main.bmp
+[nix-shell:path/to/cpprtr]$ ./main && feh out/main.bmp
 [nix-shell:path/to/cpprtr]$ ./profile
 ```

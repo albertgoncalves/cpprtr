@@ -7,9 +7,3 @@ for x in bin build out; do
         mkdir "$WD/$x"
     fi
 done
-
-open () {
-    xdg-open "$1" > /dev/null 2>&1
-}
-
-export -f open
