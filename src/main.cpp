@@ -15,7 +15,7 @@
 #define BLOCK_HEIGHT 128u
 #define X_BLOCKS     6u
 #define Y_BLOCKS     4u
-#define N_BLOCKS     24u
+#define N_BLOCKS     (X_BLOCKS * Y_BLOCKS)
 
 #define RGB_COLOR_SCALE 255.0f
 
@@ -95,8 +95,8 @@ static u16Atomic RNG_INCREMENT;
 
 #define VERTICAL_FOV 90.0f
 #define APERTURE     0.175f
-static const f32 ASPECT_RATIO = FLOAT_WIDTH / FLOAT_HEIGHT;
-static const f32 LENS_RADIUS = APERTURE / 2.0f;
+#define ASPECT_RATIO (FLOAT_WIDTH / FLOAT_HEIGHT)
+#define LENS_RADIUS  (APERTURE / 2.0f)
 
 static const Vec3 LOOK_FROM = {
     -0.5f,
