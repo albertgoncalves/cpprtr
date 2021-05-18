@@ -139,7 +139,7 @@ static void set_hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t) {
     const Vec3 point = ray->origin + (ray->direction * t);
     hit->point = point;
     const Vec3 outward_normal = (point - sphere->center) / sphere->radius;
-    const bool front_face = dot(ray->direction, outward_normal) < 0;
+    const bool front_face = dot(ray->direction, outward_normal) < 0.0f;
     hit->front_face = front_face;
     hit->normal = front_face ? outward_normal : -outward_normal;
     hit->material = sphere->material;
@@ -432,7 +432,7 @@ i32 main(i32 n, const char** args) {
     if (n < 2) {
         return EXIT_FAILURE;
     }
-    File* file = fopen(args[1], "wb");
+    File* file = fopen(args[1u], "wb");
     if (file == NULL) {
         return EXIT_FAILURE;
     }
