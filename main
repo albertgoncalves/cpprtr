@@ -4,7 +4,6 @@ set -euo pipefail
 
 target="$WD/bin/main"
 flags=(
-    "-fanalyzer"
     "-fno-exceptions"
     "-fno-rtti"
     "-fno-unwind-tables"
