@@ -19,6 +19,29 @@
 
 #define RGB_COLOR_SCALE 255.0f
 
+#define VERTICAL_FOV 90.0f
+#define APERTURE     0.175f
+#define ASPECT_RATIO (FLOAT_WIDTH / FLOAT_HEIGHT)
+#define LENS_RADIUS  (APERTURE / 2.0f)
+
+static const Vec3 LOOK_FROM = {
+    -0.5f,
+    0.75f,
+    -0.25f,
+};
+
+static const Vec3 LOOK_AT = {
+    0.0f,
+    0.0f,
+    -1.0f,
+};
+
+static const Vec3 UP = {
+    0.0f,
+    1.0f,
+    0.0f,
+};
+
 enum Material {
     LAMBERTIAN,
     METAL,
@@ -93,34 +116,9 @@ struct Memory {
 static u16Atomic BLOCK_INDEX;
 static u16Atomic RNG_INCREMENT;
 
-#define VERTICAL_FOV 90.0f
-#define APERTURE     0.175f
-#define ASPECT_RATIO (FLOAT_WIDTH / FLOAT_HEIGHT)
-#define LENS_RADIUS  (APERTURE / 2.0f)
-
-static const Vec3 LOOK_FROM = {
-    -0.5f,
-    0.75f,
-    -0.25f,
-};
-
-static const Vec3 LOOK_AT = {
-    0.0f,
-    0.0f,
-    -1.0f,
-};
-
-static const Vec3 UP = {
-    0.0f,
-    1.0f,
-    0.0f,
-};
-
 static const f32 FOCUS_DISTANCE = len(LOOK_FROM - LOOK_AT);
 
-#define N_SPHERES 11u
-
-static const Sphere SPHERES[N_SPHERES] = {
+static const Sphere SPHERES[] = {
     {{0.0f, -50.5f, -1.0f}, {0.675f, 0.675f, 0.675f}, 50.0f, 0.0f, LAMBERTIAN},
     {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
     {{0.0f, 0.0f, 0.35f}, {0.3f, 0.3f, 0.7f}, 0.5f, 0.0f, LAMBERTIAN},
@@ -133,6 +131,8 @@ static const Sphere SPHERES[N_SPHERES] = {
     {{-1.25f, 0.0f, -1.75f}, {0.0f, 0.0f, 0.0f}, 0.5f, 1.5f, DIELECTRIC},
     {{-1.25f, 0.0f, -1.75f}, {0.0f, 0.0f, 0.0f}, -0.4f, 1.5f, DIELECTRIC},
 };
+
+#define N_SPHERES (sizeof(SPHERES) / sizeof(SPHERES[0]))
 
 static void set_hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t) {
     hit->t = t;
