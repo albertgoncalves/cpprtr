@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-target="$WD/bin/main"
 flags=(
     "-fno-exceptions"
     "-fno-rtti"
@@ -45,9 +44,6 @@ flags=(
     "-Wunused-macros"
     "-Wwrite-strings"
 )
-files=(
-    main.cpp
-)
 
 now () {
     date +%s.%N
@@ -61,12 +57,12 @@ cppcheck \
     "$WD/src" \
     | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
 clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
+
 (
     start=$(now)
-    cp "$WD/src"/* "$WD/build"
-    cd "$WD/build"
-    g++ -static -g -o "$target" "${flags[@]}" "${files[@]}"
+    g++ -static -g -o "$WD/bin/main" "${flags[@]}" "$WD/src/main.cpp"
     end=$(now)
     python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
 )
-"$target" "$WD/out/main.bmp"
+
+"$WD/bin/main" "$WD/out/main.bmp"
