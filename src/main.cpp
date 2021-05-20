@@ -134,7 +134,10 @@ static const Sphere SPHERES[] = {
 
 #define N_SPHERES (sizeof(SPHERES) / sizeof(SPHERES[0]))
 
-static void set_hit(const Sphere* sphere, const Ray* ray, Hit* hit, f32 t) {
+static inline void set_hit(const Sphere* sphere,
+                           const Ray*    ray,
+                           Hit*          hit,
+                           f32           t) {
     hit->t = t;
     const Vec3 point = ray->origin + (ray->direction * t);
     hit->point = point;

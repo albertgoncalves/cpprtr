@@ -3,7 +3,9 @@
 set -euo pipefail
 
 flags=(
+    "-ffast-math"
     "-fno-exceptions"
+    "-fno-math-errno"
     "-fno-rtti"
     "-fno-unwind-tables"
     "-fshort-enums"
