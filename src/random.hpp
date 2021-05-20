@@ -6,12 +6,17 @@ struct PcgRng {
     u64 increment;
 };
 
+static u32 rotr(u32 x, u32 n) {
+    __asm__("ror %1,%0" : "+r"(x) : "c"(n));
+    return x;
+}
+
 static u32 get_random_u32(PcgRng* rng) {
     const u64 state = rng->state;
     rng->state = (state * 6364136223846793005llu) + (rng->increment | 1u);
     const u32 xor_shift = (u32)(((state >> 18u) ^ state) >> 27u);
     const u32 rotate = (u32)(state >> 59u);
-    return (xor_shift >> rotate) | (xor_shift << ((-rotate) & 31u));
+    return rotr(xor_shift, rotate);
 }
 
 static void set_seed(PcgRng* rng, u64 state, u64 increment) {

@@ -8,8 +8,10 @@ flags=(
     "-fno-unwind-tables"
     "-fshort-enums"
     "-fsingle-precision-constant"
+    "-g"
     "-march=native"
     "-O3"
+    "-static"
     "-std=gnu++11"
     "-Wall"
     "-Wcast-align"
@@ -60,7 +62,7 @@ clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
 
 (
     start=$(now)
-    g++ -static -g -o "$WD/bin/main" "${flags[@]}" "$WD/src/main.cpp"
+    g++ -o "$WD/bin/main" "${flags[@]}" "$WD/src/main.cpp"
     end=$(now)
     python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
 )
