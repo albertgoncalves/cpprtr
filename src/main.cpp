@@ -43,7 +43,7 @@ static const Vec3 UP = {
 };
 
 enum Material {
-    LAMBERTIAN,
+    LAMBERTIAN = 0,
     METAL,
     DIELECTRIC,
 };
@@ -62,12 +62,6 @@ struct Hit {
     Material material;
     bool     front_face;
 };
-
-#define EMPTY_HIT                                                         \
-    {                                                                     \
-        {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0.0f, \
-            0.0f, LAMBERTIAN, false,                                      \
-    }
 
 struct Sphere {
     Vec3     center;
@@ -211,8 +205,8 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
         1.0f,
     };
     for (u8 _ = 0u; _ < N_BOUNCES; ++_) {
-        Hit  last_hit = EMPTY_HIT;
-        Hit  nearest_hit = EMPTY_HIT;
+        Hit  last_hit = {};
+        Hit  nearest_hit = {};
         bool hit_anything = false;
         f32  t_nearest = F32_MAX;
         for (u8 i = 0u; i < N_SPHERES; ++i) {
