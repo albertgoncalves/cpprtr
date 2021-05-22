@@ -30,7 +30,7 @@ constexpr f32 FLOAT_HEIGHT = static_cast<f32>(IMAGE_HEIGHT);
 #define UP        ((Vec3){0.0f, 1.0f, 0.0f})
 
 enum Material {
-    LAMBERTIAN = 0,
+    LAMBERTIAN = 0u,
     METAL,
     DIELECTRIC,
 };
