@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
-
-if [ ! "$(uname -s)" = "Linux" ]; then
-    exit 1
-fi
+set -euo pipefail
 
 (
     sudo sh -c "echo 1 > /proc/sys/kernel/perf_event_paranoid"
