@@ -20,9 +20,9 @@
 #define FLOAT_WIDTH  1280.0f
 #define FLOAT_HEIGHT 512.0f
 
-static_assert(IMAGE_WIDTH == static_cast<u32>(FLOAT_WIDTH),
+static_assert(static_cast<f32>(IMAGE_WIDTH) == FLOAT_WIDTH,
               "IMAGE_WIDTH != FLOAT_WIDTH");
-static_assert(IMAGE_HEIGHT == static_cast<u32>(FLOAT_HEIGHT),
+static_assert(static_cast<f32>(IMAGE_HEIGHT) == FLOAT_HEIGHT,
               "IMAGE_HEIGHT != FLOAT_HEIGHT");
 
 #define VERTICAL_FOV 90.0f
