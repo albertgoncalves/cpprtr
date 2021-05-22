@@ -44,8 +44,8 @@ static void set_bmp_header(BmpHeader* header) {
 
 static void set_dib_header(DibHeader* header) {
     header->header_size = sizeof(DibHeader);
-    header->pixel_width = (i32)IMAGE_WIDTH;
-    header->pixel_height = (i32)IMAGE_HEIGHT;
+    header->pixel_width = static_cast<i32>(IMAGE_WIDTH);
+    header->pixel_height = static_cast<i32>(IMAGE_HEIGHT);
     header->color_planes = 1u;
     header->bits_per_pixel = sizeof(Pixel) * 8u;
 }

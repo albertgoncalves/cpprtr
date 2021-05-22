@@ -9,8 +9,8 @@ struct PcgRng {
 static u32 get_random_u32(PcgRng* rng) {
     const u64 state = rng->state;
     rng->state = (state * 6364136223846793005llu) + (rng->increment | 1u);
-    const u32 xor_shift = (u32)(((state >> 18u) ^ state) >> 27u);
-    const u32 rotate = (u32)(state >> 59u);
+    const u32 xor_shift = static_cast<u32>(((state >> 18u) ^ state) >> 27u);
+    const u32 rotate = static_cast<u32>(state >> 59u);
     return (xor_shift >> rotate) | (xor_shift << ((-rotate) & 31u));
 }
 
@@ -41,7 +41,7 @@ static f32 ldexpf_(f32 x, i32 q) {
 }
 
 static f32 get_random_f32(PcgRng* rng) {
-    return ldexpf_((f32)get_random_u32(rng), -32);
+    return ldexpf_(static_cast<f32>(get_random_u32(rng)), -32);
 }
 
 #endif

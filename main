@@ -3,6 +3,7 @@
 set -euo pipefail
 
 flags=(
+    "-ferror-limit=1"
     "-ffast-math"
     "-fno-exceptions"
     "-fno-math-errno"
@@ -19,7 +20,6 @@ flags=(
     "-Wno-c++98-compat"
     "-Wno-c++98-compat-pedantic"
     "-Wno-c99-extensions"
-    "-Wno-old-style-cast"
     "-Wno-padded"
     "-Wno-reserved-id-macro"
 )

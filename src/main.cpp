@@ -284,8 +284,10 @@ static void render_block(const Camera* camera,
         for (u32 i = block.start.x; i < block.end.x; ++i) {
             RgbColor color = {};
             for (u8 _ = 0u; _ < SAMPLES_PER_PIXEL; ++_) {
-                const f32  x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
-                const f32  y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
+                const f32 x =
+                    (static_cast<f32>(i) + get_random_f32(rng)) / FLOAT_WIDTH;
+                const f32 y =
+                    (static_cast<f32>(j) + get_random_f32(rng)) / FLOAT_HEIGHT;
                 const Vec3 lens_point = LENS_RADIUS * random_in_unit_disk(rng);
                 const Vec3 lens_offset =
                     (camera->u * lens_point.x) + (camera->v * lens_point.y);
@@ -297,12 +299,12 @@ static void render_block(const Camera* camera,
                 };
                 color += get_color(&ray, rng);
             }
-            color /= (f32)SAMPLES_PER_PIXEL;
+            color /= static_cast<f32>(SAMPLES_PER_PIXEL);
             clamp(&color, 0.0f, 1.0f);
             pixels[i + j_offset] = {
-                (u8)(RGB_COLOR_SCALE * sqrtf(color.blue)),
-                (u8)(RGB_COLOR_SCALE * sqrtf(color.green)),
-                (u8)(RGB_COLOR_SCALE * sqrtf(color.red)),
+                static_cast<u8>(RGB_COLOR_SCALE * sqrtf(color.blue)),
+                static_cast<u8>(RGB_COLOR_SCALE * sqrtf(color.green)),
+                static_cast<u8>(RGB_COLOR_SCALE * sqrtf(color.red)),
             };
         }
     }
@@ -311,13 +313,13 @@ static void render_block(const Camera* camera,
 static u64 get_microseconds() {
     TimeValue time;
     gettimeofday(&time, nullptr);
-    return (u64)time.tv_usec;
+    return static_cast<u64>(time.tv_usec);
 }
 
 static void* thread_render(void* payload) {
-    Pixel*        buffer = ((Payload*)payload)->buffer;
-    const Block*  blocks = ((Payload*)payload)->blocks;
-    const Camera* camera = ((Payload*)payload)->camera;
+    Pixel*        buffer = reinterpret_cast<Payload*>(payload)->buffer;
+    const Block*  blocks = reinterpret_cast<Payload*>(payload)->blocks;
+    const Camera* camera = reinterpret_cast<Payload*>(payload)->camera;
     PcgRng        rng = {};
     set_seed(&rng, get_microseconds(), RNG_INCREMENT.fetch_add(1u, SEQ_CST));
     for (;;) {
@@ -416,15 +418,15 @@ i32 main(i32 n, const char** args) {
            sizeof(Payload),
            sizeof(Memory));
     if (n < 2) {
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
     File* file = fopen(args[1u], "wb");
     if (!file) {
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
-    Memory* memory = (Memory*)calloc(1u, sizeof(Memory));
+    Memory* memory = reinterpret_cast<Memory*>(calloc(1u, sizeof(Memory)));
     if (!memory) {
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
     set_bmp_header(&memory->image.bmp_header);
     set_dib_header(&memory->image.dib_header);
