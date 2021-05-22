@@ -12,6 +12,8 @@ flags=(
     "-g"
     "-march=native"
     "-O3"
+    "-pedantic"
+    "-pedantic-errors"
     "-pthread"
     "-std=gnu++11"
     "-Werror"
