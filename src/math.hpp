@@ -99,7 +99,7 @@ static Vec3 refract(Vec3 uv, Vec3 n, f32 etai_over_etat) {
     const f32  length_squared = dot(parallel, parallel);
     Vec3       perpendicular;
     if (1.0f <= length_squared) {
-        perpendicular = {0.0f, 0.0f, 0.0f};
+        perpendicular = {};
     } else {
         perpendicular = (-sqrtf(1.0f - length_squared)) * n;
     }

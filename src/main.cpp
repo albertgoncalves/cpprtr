@@ -118,12 +118,12 @@ static const Sphere SPHERES[] = {
     {{0.0f, 0.0f, 0.35f}, {0.3f, 0.3f, 0.7f}, 0.5f, 0.0f, LAMBERTIAN},
     {{0.0f, 0.0f, -2.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
     {{1.15f, 0.0f, -0.85f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.025f, METAL},
-    {{1.0f, 0.0f, 0.25f}, {0.0f, 0.0f, 0.0f}, 0.5f, 1.5f, DIELECTRIC},
-    {{1.0f, 0.0f, 0.25f}, {0.0f, 0.0f, 0.0f}, -0.475f, 1.5f, DIELECTRIC},
-    {{-1.0f, 0.0f, -0.35f}, {0.0f, 0.0f, 0.0f}, 0.5f, 1.5f, DIELECTRIC},
-    {{-1.0f, 0.0f, -0.35f}, {0.0f, 0.0f, 0.0f}, -0.4f, 1.5f, DIELECTRIC},
-    {{-1.25f, 0.0f, -1.75f}, {0.0f, 0.0f, 0.0f}, 0.5f, 1.5f, DIELECTRIC},
-    {{-1.25f, 0.0f, -1.75f}, {0.0f, 0.0f, 0.0f}, -0.4f, 1.5f, DIELECTRIC},
+    {{1.0f, 0.0f, 0.25f}, {}, 0.5f, 1.5f, DIELECTRIC},
+    {{1.0f, 0.0f, 0.25f}, {}, -0.475f, 1.5f, DIELECTRIC},
+    {{-1.0f, 0.0f, -0.35f}, {}, 0.5f, 1.5f, DIELECTRIC},
+    {{-1.0f, 0.0f, -0.35f}, {}, -0.4f, 1.5f, DIELECTRIC},
+    {{-1.25f, 0.0f, -1.75f}, {}, 0.5f, 1.5f, DIELECTRIC},
+    {{-1.25f, 0.0f, -1.75f}, {}, -0.4f, 1.5f, DIELECTRIC},
 };
 
 #define N_SPHERES (sizeof(SPHERES) / sizeof(SPHERES[0]))
@@ -234,7 +234,7 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
                          get_random_in_unit_sphere(rng)),
                 };
                 if (dot(last_ray.direction, nearest_hit.normal) <= 0.0f) {
-                    return {0.0f, 0.0f, 0.0f};
+                    return {};
                 }
                 attenuation *= nearest_hit.albedo;
                 break;
@@ -298,7 +298,7 @@ static void render_block(const Camera* camera,
     for (u32 j = block.start.y; j < block.end.y; ++j) {
         const u32 j_offset = j * IMAGE_WIDTH;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
-            RgbColor color = {0.0f, 0.0f, 0.0f};
+            RgbColor color = {};
             for (u8 _ = 0u; _ < SAMPLES_PER_PIXEL; ++_) {
                 const f32  x = ((f32)i + get_random_f32(rng)) / FLOAT_WIDTH;
                 const f32  y = ((f32)j + get_random_f32(rng)) / FLOAT_HEIGHT;
@@ -334,7 +334,7 @@ static void* thread_render(void* payload) {
     Pixel*        buffer = ((Payload*)payload)->buffer;
     const Block*  blocks = ((Payload*)payload)->blocks;
     const Camera* camera = ((Payload*)payload)->camera;
-    PcgRng        rng = {0u, 0u};
+    PcgRng        rng = {};
     set_seed(&rng, get_microseconds(), RNG_INCREMENT.fetch_add(1u, SEQ_CST));
     for (;;) {
         const u16 index = BLOCK_INDEX.fetch_add(1u, SEQ_CST);
