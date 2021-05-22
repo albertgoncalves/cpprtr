@@ -5,7 +5,7 @@
 #include "math.hpp"
 #include "random.hpp"
 
-#define N_THREADS 3u
+#define MAX_THREADS 16
 
 #define N_BOUNCES         32u
 #define SAMPLES_PER_PIXEL 32u
@@ -103,7 +103,7 @@ struct Payload {
 
 struct Memory {
     BmpImage image;
-    Thread   threads[N_THREADS];
+    Thread   threads[MAX_THREADS];
     Block    blocks[N_BLOCKS];
 };
 
@@ -390,10 +390,14 @@ static void set_pixels(Memory* memory) {
             memory->blocks[index++] = block;
         }
     }
-    for (u8 i = 0u; i < N_THREADS; ++i) {
+    i32 n = get_nprocs() - 1;
+    if ((n < 2) || (MAX_THREADS < n)) {
+        exit(EXIT_FAILURE);
+    }
+    for (u8 i = 0u; i < n; ++i) {
         pthread_create(&memory->threads[i], NULL, thread_render, &payload);
     }
-    for (u8 i = 0u; i < N_THREADS; ++i) {
+    for (u8 i = 0u; i < n; ++i) {
         pthread_join(memory->threads[i], NULL);
     }
 }
