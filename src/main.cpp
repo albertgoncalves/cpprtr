@@ -24,23 +24,9 @@
 #define ASPECT_RATIO (FLOAT_WIDTH / FLOAT_HEIGHT)
 #define LENS_RADIUS  (APERTURE / 2.0f)
 
-static const Vec3 LOOK_FROM = {
-    -0.5f,
-    0.75f,
-    -0.25f,
-};
-
-static const Vec3 LOOK_AT = {
-    0.0f,
-    0.0f,
-    -1.0f,
-};
-
-static const Vec3 UP = {
-    0.0f,
-    1.0f,
-    0.0f,
-};
+#define LOOK_FROM ((Vec3){-0.5f, 0.75f, -0.25f})
+#define LOOK_AT   ((Vec3){0.0f, 0.0f, -1.0f})
+#define UP        ((Vec3){0.0f, 1.0f, 0.0f})
 
 enum Material {
     LAMBERTIAN = 0,
@@ -110,20 +96,18 @@ struct Memory {
 static u16Atomic BLOCK_INDEX;
 static u16Atomic RNG_INCREMENT;
 
-static const f32 FOCUS_DISTANCE = len(LOOK_FROM - LOOK_AT);
-
 static const Sphere SPHERES[] = {
-    {{0.0f, -50.5f, -1.0f}, {0.675f, 0.675f, 0.675f}, 50.0f, 0.0f, LAMBERTIAN},
-    {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
-    {{0.0f, 0.0f, 0.35f}, {0.3f, 0.3f, 0.7f}, 0.5f, 0.0f, LAMBERTIAN},
-    {{0.0f, 0.0f, -2.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, 0.0f, LAMBERTIAN},
-    {{1.15f, 0.0f, -0.85f}, {0.8f, 0.8f, 0.8f}, 0.5f, 0.025f, METAL},
-    {{1.0f, 0.0f, 0.25f}, {}, 0.5f, 1.5f, DIELECTRIC},
-    {{1.0f, 0.0f, 0.25f}, {}, -0.475f, 1.5f, DIELECTRIC},
-    {{-1.0f, 0.0f, -0.35f}, {}, 0.5f, 1.5f, DIELECTRIC},
-    {{-1.0f, 0.0f, -0.35f}, {}, -0.4f, 1.5f, DIELECTRIC},
-    {{-1.25f, 0.0f, -1.75f}, {}, 0.5f, 1.5f, DIELECTRIC},
-    {{-1.25f, 0.0f, -1.75f}, {}, -0.4f, 1.5f, DIELECTRIC},
+    {{0.0f, -50.5f, -1.0f}, {0.675f, 0.675f, 0.675f}, 50.0f, {}, LAMBERTIAN},
+    {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, {}, LAMBERTIAN},
+    {{0.0f, 0.0f, 0.35f}, {0.3f, 0.3f, 0.7f}, 0.5f, {}, LAMBERTIAN},
+    {{0.0f, 0.0f, -2.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, {}, LAMBERTIAN},
+    {{1.15f, 0.0f, -0.85f}, {0.8f, 0.8f, 0.8f}, 0.5f, {0.025f}, METAL},
+    {{1.0f, 0.0f, 0.25f}, {}, 0.5f, {1.5f}, DIELECTRIC},
+    {{1.0f, 0.0f, 0.25f}, {}, -0.475f, {1.5f}, DIELECTRIC},
+    {{-1.0f, 0.0f, -0.35f}, {}, 0.5f, {1.5f}, DIELECTRIC},
+    {{-1.0f, 0.0f, -0.35f}, {}, -0.4f, {1.5f}, DIELECTRIC},
+    {{-1.25f, 0.0f, -1.75f}, {}, 0.5f, {1.5f}, DIELECTRIC},
+    {{-1.25f, 0.0f, -1.75f}, {}, -0.4f, {1.5f}, DIELECTRIC},
 };
 
 #define N_SPHERES (sizeof(SPHERES) / sizeof(SPHERES[0]))
@@ -326,7 +310,7 @@ static void render_block(const Camera* camera,
 
 static u64 get_microseconds() {
     TimeValue time;
-    gettimeofday(&time, NULL);
+    gettimeofday(&time, nullptr);
     return (u64)time.tv_usec;
 }
 
@@ -339,7 +323,7 @@ static void* thread_render(void* payload) {
     for (;;) {
         const u16 index = BLOCK_INDEX.fetch_add(1u, SEQ_CST);
         if (N_BLOCKS <= index) {
-            return NULL;
+            return nullptr;
         }
         render_block(camera, buffer, blocks[index], &rng);
     }
@@ -354,8 +338,9 @@ static void set_pixels(Memory* memory) {
     const Vec3   u = unit(cross(UP, w));
     const Vec3   v = cross(w, u);
     const Vec3   origin = LOOK_FROM;
-    const Vec3   horizontal = FOCUS_DISTANCE * viewport_width * u;
-    const Vec3   vertical = FOCUS_DISTANCE * viewport_height * v;
+    const f32    focus_distance = len(LOOK_FROM - LOOK_AT);
+    const Vec3   horizontal = focus_distance * viewport_width * u;
+    const Vec3   vertical = focus_distance * viewport_height * v;
     const Camera camera = {
         u,
         v,
@@ -363,7 +348,7 @@ static void set_pixels(Memory* memory) {
         horizontal,
         vertical,
         origin - (horizontal / 2.0f) - (vertical / 2.0f) -
-            (FOCUS_DISTANCE * w),
+            (focus_distance * w),
     };
     Payload payload = {
         memory->image.pixels,
@@ -395,10 +380,10 @@ static void set_pixels(Memory* memory) {
         exit(EXIT_FAILURE);
     }
     for (u8 i = 0u; i < n; ++i) {
-        pthread_create(&memory->threads[i], NULL, thread_render, &payload);
+        pthread_create(&memory->threads[i], nullptr, thread_render, &payload);
     }
     for (u8 i = 0u; i < n; ++i) {
-        pthread_join(memory->threads[i], NULL);
+        pthread_join(memory->threads[i], nullptr);
     }
 }
 
@@ -434,11 +419,11 @@ i32 main(i32 n, const char** args) {
         return EXIT_FAILURE;
     }
     File* file = fopen(args[1u], "wb");
-    if (file == NULL) {
+    if (!file) {
         return EXIT_FAILURE;
     }
     Memory* memory = (Memory*)calloc(1u, sizeof(Memory));
-    if (memory == NULL) {
+    if (!memory) {
         return EXIT_FAILURE;
     }
     set_bmp_header(&memory->image.bmp_header);

@@ -9,62 +9,31 @@ flags=(
     "-fno-rtti"
     "-fno-unwind-tables"
     "-fshort-enums"
-    "-fsingle-precision-constant"
     "-g"
     "-march=native"
     "-O3"
-    "-static"
+    "-pthread"
     "-std=gnu++11"
-    "-Wall"
-    "-Wcast-align"
-    "-Wcast-align=strict"
-    "-Wcast-qual"
-    "-Wconversion"
-    "-Wdate-time"
-    "-Wdouble-promotion"
-    "-Wduplicated-branches"
-    "-Wduplicated-cond"
     "-Werror"
-    "-Wextra"
-    "-Wfatal-errors"
-    "-Wfloat-equal"
-    "-Wformat-signedness"
-    "-Wformat=2"
-    "-Winline"
-    "-Wlogical-op"
-    "-Wmissing-declarations"
-    "-Wmissing-include-dirs"
-    "-Wnull-dereference"
-    "-Wpacked"
-    "-Wpedantic"
-    "-Wpointer-arith"
-    "-Wredundant-decls"
-    "-Wshadow"
-    "-Wstack-protector"
-    "-Wswitch-enum"
-    "-Wtrampolines"
-    "-Wundef"
-    "-Wunused"
-    "-Wunused-macros"
-    "-Wwrite-strings"
+    "-Weverything"
+    "-Wno-c++98-compat"
+    "-Wno-c++98-compat-pedantic"
+    "-Wno-c99-extensions"
+    "-Wno-old-style-cast"
+    "-Wno-padded"
+    "-Wno-reserved-id-macro"
 )
 
 now () {
     date +%s.%N
 }
 
-cppcheck \
-    --enable=all \
-    --suppress=cstyleCast \
-    --suppress=missingIncludeSystem \
-    --suppress=resourceLeak \
-    "$WD/src" \
-    | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
+cppcheck --enable=all "$WD/src" | sed 's/\/.*\/\(.*\) \.\.\./\1/g'
 clang-format -i -verbose "$WD/src"/* 2>&1 | sed 's/\/.*\///g'
 
 (
     start=$(now)
-    g++ -o "$WD/bin/main" "${flags[@]}" "$WD/src/main.cpp"
+    clang++ -o "$WD/bin/main" "${flags[@]}" "$WD/src/main.cpp"
     end=$(now)
     python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
 )
