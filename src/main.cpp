@@ -7,12 +7,12 @@
 
 #define MAX_THREADS 8
 
-#define N_BOUNCES         32u
-#define SAMPLES_PER_PIXEL 32u
+#define N_BOUNCES         32
+#define SAMPLES_PER_PIXEL 32
 #define EPSILON           0.001f
 
-#define X_BLOCKS     8u
-#define Y_BLOCKS     8u
+#define X_BLOCKS     8
+#define Y_BLOCKS     8
 #define BLOCK_WIDTH  (IMAGE_WIDTH / X_BLOCKS)
 #define BLOCK_HEIGHT (IMAGE_HEIGHT / Y_BLOCKS)
 #define N_BLOCKS     (X_BLOCKS * Y_BLOCKS)
@@ -30,7 +30,7 @@ constexpr f32 FLOAT_HEIGHT = static_cast<f32>(IMAGE_HEIGHT);
 #define UP        ((Vec3){0.0f, 1.0f, 0.0f})
 
 enum Material {
-    LAMBERTIAN = 0u,
+    LAMBERTIAN = 0,
     METAL,
     DIELECTRIC,
 };
@@ -189,12 +189,12 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
         1.0f,
         1.0f,
     };
-    for (u8 _ = 0u; _ < N_BOUNCES; ++_) {
+    for (u8 _ = 0; _ < N_BOUNCES; ++_) {
         Hit  last_hit = {};
         Hit  nearest_hit = {};
         bool hit_anything = false;
         f32  t_nearest = F32_MAX;
-        for (u8 i = 0u; i < N_SPHERES; ++i) {
+        for (u8 i = 0; i < N_SPHERES; ++i) {
             if (get_hit(&SPHERES[i], &last_ray, &last_hit, t_nearest)) {
                 hit_anything = true;
                 t_nearest = last_hit.t;
@@ -286,7 +286,7 @@ static void render_block(const Camera* camera,
         const u32 j_offset = j * IMAGE_WIDTH;
         for (u32 i = block.start.x; i < block.end.x; ++i) {
             RgbColor color = {};
-            for (u8 _ = 0u; _ < SAMPLES_PER_PIXEL; ++_) {
+            for (u8 _ = 0; _ < SAMPLES_PER_PIXEL; ++_) {
                 const f32 x =
                     (static_cast<f32>(i) + get_random_f32(rng)) / FLOAT_WIDTH;
                 const f32 y =
@@ -324,9 +324,9 @@ static void* thread_render(void* payload) {
     const Block*  blocks = reinterpret_cast<Payload*>(payload)->blocks;
     const Camera* camera = reinterpret_cast<Payload*>(payload)->camera;
     PcgRng        rng = {};
-    set_seed(&rng, get_microseconds(), RNG_INCREMENT.fetch_add(1u, SEQ_CST));
+    set_seed(&rng, get_microseconds(), RNG_INCREMENT.fetch_add(1, SEQ_CST));
     for (;;) {
-        const u16 index = BLOCK_INDEX.fetch_add(1u, SEQ_CST);
+        const u16 index = BLOCK_INDEX.fetch_add(1, SEQ_CST);
         if (N_BLOCKS <= index) {
             return nullptr;
         }
@@ -360,9 +360,9 @@ static void set_pixels(Memory* memory) {
         memory->blocks,
         &camera,
     };
-    u16 index = 0u;
-    for (u32 y = 0u; y < Y_BLOCKS; ++y) {
-        for (u32 x = 0u; x < X_BLOCKS; ++x) {
+    u16 index = 0;
+    for (u32 y = 0; y < Y_BLOCKS; ++y) {
+        for (u32 x = 0; x < X_BLOCKS; ++x) {
             const Point start = {
                 x * BLOCK_WIDTH,
                 y * BLOCK_HEIGHT,
@@ -384,10 +384,10 @@ static void set_pixels(Memory* memory) {
     if ((n < 2) || (MAX_THREADS < n)) {
         exit(EXIT_FAILURE);
     }
-    for (u8 i = 0u; i < n; ++i) {
+    for (u8 i = 0; i < n; ++i) {
         pthread_create(&memory->threads[i], nullptr, thread_render, &payload);
     }
-    for (u8 i = 0u; i < n; ++i) {
+    for (u8 i = 0; i < n; ++i) {
         pthread_join(memory->threads[i], nullptr);
     }
 }
@@ -423,11 +423,11 @@ i32 main(i32 n, const char** args) {
     if (n < 2) {
         exit(EXIT_FAILURE);
     }
-    File* file = fopen(args[1u], "wb");
+    File* file = fopen(args[1], "wb");
     if (!file) {
         exit(EXIT_FAILURE);
     }
-    Memory* memory = reinterpret_cast<Memory*>(calloc(1u, sizeof(Memory)));
+    Memory* memory = reinterpret_cast<Memory*>(calloc(1, sizeof(Memory)));
     if (!memory) {
         exit(EXIT_FAILURE);
     }
