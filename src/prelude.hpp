@@ -30,11 +30,8 @@ typedef std::atomic_uint16_t u16Atomic;
 
 #define SEQ_CST std::memory_order_seq_cst
 
-#define IMAGE_WIDTH  768u
+#define IMAGE_WIDTH  1280u
 #define IMAGE_HEIGHT 512u
-#define N_PIXELS     393216u
-
-#define FLOAT_WIDTH  768.0f
-#define FLOAT_HEIGHT 512.0f
+#define N_PIXELS     (IMAGE_WIDTH * IMAGE_HEIGHT)
 
 #endif

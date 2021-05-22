@@ -27,8 +27,8 @@ struct Pixel {
 
 #pragma pack(pop)
 
-#define BMP_HEADER_SIZE sizeof(BmpHeader) + sizeof(DibHeader)
-#define BMP_FILE_SIZE   BMP_HEADER_SIZE + sizeof(Pixel[N_PIXELS])
+#define BMP_HEADER_SIZE (sizeof(BmpHeader) + sizeof(DibHeader))
+#define BMP_FILE_SIZE   (BMP_HEADER_SIZE + sizeof(Pixel[N_PIXELS]))
 
 struct BmpImage {
     Pixel     pixels[N_PIXELS];

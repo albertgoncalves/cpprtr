@@ -5,22 +5,23 @@
 #include "math.hpp"
 #include "random.hpp"
 
-#define MAX_THREADS 16
+#define MAX_THREADS 8
 
 #define N_BOUNCES         32u
 #define SAMPLES_PER_PIXEL 32u
-#define EPSILON           0.00001f
+#define EPSILON           0.001f
 
-#define BLOCK_WIDTH  128u
-#define BLOCK_HEIGHT 128u
-#define X_BLOCKS     6u
-#define Y_BLOCKS     4u
+#define X_BLOCKS     8u
+#define Y_BLOCKS     8u
+#define BLOCK_WIDTH  (IMAGE_WIDTH / X_BLOCKS)
+#define BLOCK_HEIGHT (IMAGE_HEIGHT / Y_BLOCKS)
 #define N_BLOCKS     (X_BLOCKS * Y_BLOCKS)
 
-#define RGB_COLOR_SCALE 255.0f
+constexpr f32 FLOAT_WIDTH = static_cast<f32>(IMAGE_WIDTH);
+constexpr f32 FLOAT_HEIGHT = static_cast<f32>(IMAGE_HEIGHT);
 
 #define VERTICAL_FOV 90.0f
-#define APERTURE     0.175f
+#define APERTURE     0.1f
 #define ASPECT_RATIO (FLOAT_WIDTH / FLOAT_HEIGHT)
 #define LENS_RADIUS  (APERTURE / 2.0f)
 
@@ -97,7 +98,7 @@ static u16Atomic BLOCK_INDEX;
 static u16Atomic RNG_INCREMENT;
 
 static const Sphere SPHERES[] = {
-    {{0.0f, -50.5f, -1.0f}, {0.675f, 0.675f, 0.675f}, 50.0f, {}, LAMBERTIAN},
+    {{0.0f, -500.5f, -1.0f}, {0.675f, 0.675f, 0.675f}, 500.0f, {}, LAMBERTIAN},
     {{0.0f, 0.0f, -1.0f}, {0.3f, 0.7f, 0.3f}, 0.5f, {}, LAMBERTIAN},
     {{0.0f, 0.0f, 0.35f}, {0.3f, 0.3f, 0.7f}, 0.5f, {}, LAMBERTIAN},
     {{0.0f, 0.0f, -2.0f}, {0.7f, 0.3f, 0.3f}, 0.5f, {}, LAMBERTIAN},
@@ -274,6 +275,8 @@ static Vec3 random_in_unit_disk(PcgRng* rng) {
         }
     }
 }
+
+#define RGB_COLOR_SCALE 255.0f
 
 static void render_block(const Camera* camera,
                          Pixel*        pixels,
