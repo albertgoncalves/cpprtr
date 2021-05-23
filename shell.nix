@@ -1,7 +1,6 @@
 with import <nixpkgs> {};
-pkgsMusl.mkShell {
+mkShell.override { stdenv = llvmPackages_11.stdenv; } {
     buildInputs = [
-        clang_11
         cppcheck
         feh
         linuxPackages.perf
