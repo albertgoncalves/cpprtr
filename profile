@@ -10,9 +10,13 @@ set -euo pipefail
     rm perf.data*
 )
 
+set +u
+
 if [ -z "$1" ]; then
     exit 0
 fi
+
+set -u
 
 (
     valgrind \
