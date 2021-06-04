@@ -33,7 +33,7 @@ now () {
     clang-format -i -verbose "$WD/src"/*
     clang++ -o "$WD/bin/main" "${flags[@]}" "$WD/src/main.cpp"
     end=$(now)
-    python3 -c "print(\"Compiled! ({:.3f}s)\n\".format(${end} - ${start}))"
+    python3 -c "print(\"Compiled! ({:.3f}s)\n\".format($end - $start))"
 )
 
 "$WD/bin/main" "$WD/out/main.bmp"
