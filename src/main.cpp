@@ -317,7 +317,7 @@ static void render_block(const Camera* camera,
 
 static u64 get_microseconds() {
     TimeValue time;
-    gettimeofday(&time, nullptr);
+    gettimeofday(&time, null);
     return static_cast<u64>(time.tv_usec);
 }
 
@@ -330,7 +330,7 @@ static void* thread_render(void* payload) {
     for (;;) {
         const u16 index = BLOCK_INDEX.fetch_add(1, SEQ_CST);
         if (N_BLOCKS <= index) {
-            return nullptr;
+            return null;
         }
         render_block(camera, buffer, blocks[index], &rng);
     }
@@ -387,10 +387,10 @@ static void set_pixels(Memory* memory) {
         exit(EXIT_FAILURE);
     }
     for (u8 i = 0; i < n; ++i) {
-        pthread_create(&memory->threads[i], nullptr, thread_render, &payload);
+        pthread_create(&memory->threads[i], null, thread_render, &payload);
     }
     for (u8 i = 0; i < n; ++i) {
-        pthread_join(memory->threads[i], nullptr);
+        pthread_join(memory->threads[i], null);
     }
 }
 

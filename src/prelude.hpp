@@ -21,6 +21,8 @@ typedef float    f32;
 
 typedef FILE File;
 
+#define null nullptr
+
 typedef struct timeval TimeValue;
 
 typedef pthread_t            Thread;
