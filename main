@@ -5,11 +5,13 @@ set -euo pipefail
 flags=(
     "-ferror-limit=1"
     "-ffast-math"
+    "-flto"
     "-fno-exceptions"
     "-fno-math-errno"
     "-fno-rtti"
     "-fno-unwind-tables"
     "-fshort-enums"
+    "-fuse-ld=lld"
     "-g"
     "-march=native"
     "-O3"
