@@ -3,7 +3,7 @@ mkShell.override { stdenv = llvmPackages_12.stdenv; } {
     buildInputs = [
         feh
         linuxPackages.perf
-        lld_12
+        llvmPackages_12.lld
         python3
         shellcheck
         valgrind
