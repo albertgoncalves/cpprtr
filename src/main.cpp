@@ -5,6 +5,9 @@
 #include "math.hpp"
 #include "random.hpp"
 
+#include <string.h>
+#include <unistd.h>
+
 #define MAX_THREADS 8
 
 #define N_BOUNCES         32
@@ -394,6 +397,15 @@ static void set_pixels(Memory* memory) {
     }
 }
 
+static void* alloc(usize size) {
+    void* memory = sbrk(static_cast<isize>(size));
+    if (memory == reinterpret_cast<void*>(-1)) {
+        _exit(EXIT_FAILURE);
+    }
+    memset(memory, 0, size);
+    return memory;
+}
+
 i32 main(i32 n, const char** args) {
     printf("sizeof(void*)    : %zu\n"
            "sizeof(Vec3)     : %zu\n"
@@ -429,16 +441,12 @@ i32 main(i32 n, const char** args) {
     if (!file) {
         exit(EXIT_FAILURE);
     }
-    Memory* memory = reinterpret_cast<Memory*>(calloc(1, sizeof(Memory)));
-    if (!memory) {
-        exit(EXIT_FAILURE);
-    }
+    Memory* memory = reinterpret_cast<Memory*>(alloc(sizeof(Memory)));
     set_bmp_header(&memory->image.bmp_header);
     set_dib_header(&memory->image.dib_header);
     set_pixels(memory);
     write_bmp(file, &memory->image);
     fclose(file);
-    free(memory);
     printf("Done!\n");
     return EXIT_SUCCESS;
 }
