@@ -5,7 +5,7 @@
 #include "math.hpp"
 #include "random.hpp"
 
-#include <string.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #define MAX_THREADS 8
@@ -398,11 +398,15 @@ static void set_pixels(Memory* memory) {
 }
 
 static void* alloc(usize size) {
-    void* memory = sbrk(static_cast<isize>(size));
-    if (memory == reinterpret_cast<void*>(-1)) {
+    void* memory = mmap(null,
+                        size,
+                        PROT_READ | PROT_WRITE,
+                        MAP_ANONYMOUS | MAP_PRIVATE,
+                        -1,
+                        0);
+    if (memory == MAP_FAILED) {
         _exit(EXIT_FAILURE);
     }
-    memset(memory, 0, size);
     return memory;
 }
 
