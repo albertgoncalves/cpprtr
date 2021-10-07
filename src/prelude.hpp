@@ -18,7 +18,6 @@ typedef size_t   usize;
 
 typedef int16_t i16;
 typedef int32_t i32;
-typedef ssize_t isize;
 
 typedef float f32;
 
