@@ -12,7 +12,6 @@ flags=(
     "-fno-rtti"
     "-fno-unwind-tables"
     "-fshort-enums"
-    "-fuse-ld=lld"
     "-g"
     "-march=native"
     "-nostdlib++"
@@ -35,7 +34,7 @@ now () {
 (
     start=$(now)
     clang-format -i -verbose "$WD/src"/*
-    clang++ -o "$WD/bin/main" "${flags[@]}" "$WD/src/main.cpp"
+    mold -run clang++ -o "$WD/bin/main" "${flags[@]}" "$WD/src/main.cpp"
     end=$(now)
     python3 -c "print(\"Compiled! ({:.3f}s)\n\".format($end - $start))"
 )
