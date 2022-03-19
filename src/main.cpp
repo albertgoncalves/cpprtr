@@ -256,11 +256,7 @@ static RgbColor get_color(const Ray* ray, PcgRng* rng) {
             }
         } else {
             const f32 t = 0.5f * (unit(last_ray.direction).y + 1.0f);
-            RgbColor  color = {
-                t * 0.5f,
-                t * 0.7f,
-                t,
-            };
+            RgbColor  color = {t * 0.5f, t * 0.7f, t};
             color += 1.0f - t;
             return attenuation * color;
         }
