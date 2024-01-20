@@ -5,7 +5,6 @@ set -euo pipefail
 flags=(
     "-ferror-limit=1"
     "-ffast-math"
-    "-flto"
     "-fno-autolink"
     "-fno-exceptions"
     "-fno-math-errno"
@@ -25,6 +24,7 @@ flags=(
     "-Wno-c99-extensions"
     "-Wno-padded"
     "-Wno-reserved-id-macro"
+    "-Wno-unsafe-buffer-usage"
 )
 
 now () {
